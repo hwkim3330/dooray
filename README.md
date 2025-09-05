@@ -17,28 +17,18 @@ GitHub Pages를 통해 호스팅되는 Dooray 회의실 예약 현황 조회 도
 
 📖 자세한 API 문서: [Dooray API 가이드](https://helpdesk.dooray.com/share/pages/9wWo-xwiR66BO5LGshgVTg/2939987647631384419)
 
-## ⚠️ CORS 문제 해결
+## ✅ CORS 자동 우회
 
-브라우저의 CORS 정책으로 인해 직접 Dooray API 호출이 제한될 수 있습니다.
+**확장 프로그램 설치 불필요!** 코드에 내장된 여러 CORS 프록시를 자동으로 시도합니다:
 
-### 해결 방법
+- `corsproxy.io`
+- `allorigins.win`
+- `cors-anywhere.herokuapp.com`
+- `cors-proxy.htmldriven.com`
+- `thingproxy.freeboard.io`
+- `cors.bridged.cc`
 
-1. **Chrome 확장 프로그램 사용** (권장)
-   - [CORS Unblock](https://chrome.google.com/webstore/detail/cors-unblock/lfhmikememgdcahcdlaciloancbhjino) 설치
-   - 확장 프로그램 활성화 후 사이트 새로고침
-
-2. **프록시 서버 사용**
-   - 코드에서 `cors-anywhere` 주석 해제
-   - 또는 개인 프록시 서버 구축
-
-3. **로컬 서버 실행**
-   ```bash
-   # Python 간단 서버
-   python -m http.server 8000
-   
-   # Node.js 서버 (http-server 설치 필요)
-   npx http-server
-   ```
+연결이 실패하면 자동으로 다음 프록시를 시도하므로 **별도 설정 없이 바로 사용 가능**합니다.
 
 ## 🔒 보안 안내
 

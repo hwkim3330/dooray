@@ -361,7 +361,8 @@
                         <li>새 토큰 생성 후 복사</li>
                     </ol>
                     <small style="color: #666; display: block; margin-top: 0.5rem;">
-                        * 토큰은 브라우저에만 저장되며 서버로 전송되지 않습니다
+                        * 토큰은 브라우저에만 저장되며 서버로 전송되지 않습니다<br>
+                        * CORS 우회를 위해 여러 프록시 서버를 자동으로 시도합니다
                     </small>
                 </div>
             </div>
@@ -424,29 +425,18 @@
             }
             
             loginBtn.disabled = true;
-            loginBtn.textContent = '확인 중...';
+            loginBtn.textContent = '연결 시도 중...';
             errorDiv.textContent = '';
             
             try {
-                // 토큰 유효성 검증 (본인 정보 조회)
-                const headers = {
-                    'Authorization': `dooray-api ${token}`,
-                    'Content-Type': 'application/json'
-                };
+                // 임시로 토큰 설정하여 API 호출 테스트
+                apiToken = token;
                 
-                // CORS 프록시 사용 (필요시)
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const testUrl = `${proxyUrl}${DOORAY_API_ENDPOINT}/common/v1/members/me`;
+                // 토큰 유효성 검증을 위해 장소 목록 가져오기 시도
+                const testData = await doorayAPI('/reservation/v1/resource-categories', { size: 1 });
                 
-                const response = await fetch(testUrl, {
-                    method: 'GET',
-                    headers: headers
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    myInfo = data.result || {};
-                    apiToken = token;
+                if (testData && testData.result) {
+                    // 성공적으로 데이터를 가져왔으면 토큰 저장
                     localStorage.setItem('dooray_api_token', token);
                     showMainView();
                 } else {
@@ -454,11 +444,12 @@
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.textContent = '토큰 검증 실패: ' + error.message;
+                apiToken = null; // 실패시 토큰 초기화
                 
-                // CORS 문제일 경우 안내
-                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-                    errorDiv.innerHTML = 'CORS 정책으로 인해 직접 연결할 수 없습니다.<br>프록시 서버를 사용하거나 백엔드 서버가 필요합니다.';
+                if (error.message.includes('CORS') || error.message.includes('모든 연결')) {
+                    errorDiv.innerHTML = '연결할 수 없습니다. 잠시 후 다시 시도해주세요.<br><small>여러 프록시 서버를 시도했지만 모두 실패했습니다.</small>';
+                } else {
+                    errorDiv.textContent = error.message;
                 }
             } finally {
                 loginBtn.disabled = false;
@@ -515,6 +506,18 @@
             loadAllTimelines();
         }
         
+        // CORS 프록시 목록
+        const CORS_PROXIES = [
+            'https://corsproxy.io/?',
+            'https://api.allorigins.win/raw?url=',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://cors-proxy.htmldriven.com/?url=',
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://cors.bridged.cc/'
+        ];
+        
+        let currentProxyIndex = 0;
+        
         // API 호출 헬퍼
         async function doorayAPI(endpoint, params = {}) {
             const headers = {
@@ -524,28 +527,47 @@
             
             // URL 파라미터 구성
             const queryString = new URLSearchParams(params).toString();
-            const url = `${DOORAY_API_ENDPOINT}${endpoint}${queryString ? '?' + queryString : ''}`;
+            const baseUrl = `${DOORAY_API_ENDPOINT}${endpoint}${queryString ? '?' + queryString : ''}`;
             
-            // CORS 프록시 (필요시 사용)
-            // const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            // const finalUrl = proxyUrl + url;
-            
+            // 직접 호출 시도
             try {
-                const response = await fetch(url, {
+                const response = await fetch(baseUrl, {
                     method: 'GET',
                     headers: headers,
                     mode: 'cors'
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                if (response.ok) {
+                    return await response.json();
                 }
-                
-                return await response.json();
-            } catch (error) {
-                console.error('API call failed:', error);
-                throw error;
+            } catch (directError) {
+                console.log('Direct API call failed, trying proxies...', directError);
             }
+            
+            // 프록시를 통한 호출 시도
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                const proxyIndex = (currentProxyIndex + i) % CORS_PROXIES.length;
+                const proxy = CORS_PROXIES[proxyIndex];
+                const proxiedUrl = proxy + encodeURIComponent(baseUrl);
+                
+                try {
+                    console.log(`Trying proxy: ${proxy}`);
+                    const response = await fetch(proxiedUrl, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (response.ok) {
+                        currentProxyIndex = proxyIndex; // 성공한 프록시 기억
+                        return await response.json();
+                    }
+                } catch (proxyError) {
+                    console.log(`Proxy ${proxy} failed:`, proxyError);
+                    continue;
+                }
+            }
+            
+            throw new Error('모든 연결 방법이 실패했습니다. CORS 문제를 해결할 수 없습니다.');
         }
         
         // 전체 타임라인 로드

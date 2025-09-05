@@ -5,694 +5,457 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KETI 회의실 예약 현황</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #1c1e21;
+            --text-secondary: #606770;
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(255, 255, 255, 1);
+            --shadow-color: rgba(0, 0, 0, 0.08);
+        }
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background: #f8f9fa;
-            color: #212529;
-            line-height: 1.5;
-        }
-        
-        /* 로그인 화면 */
-        .login-container {
-            min-height: 100vh;
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
             display: flex;
-            align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
         }
-        
-        .login-card {
-            background: white;
-            border-radius: 16px;
-            padding: 40px 32px;
+        .app-container {
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            max-width: 1600px;
         }
-        
-        .login-card h2 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #212529;
-        }
-        
-        .login-card .subtitle {
-            color: #6c757d;
-            font-size: 14px;
-            margin-bottom: 32px;
-        }
-        
-        .input-group {
-            margin-bottom: 20px;
-        }
-        
-        .input-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #495057;
-        }
-        
-        .input-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.2s;
-        }
-        
-        .input-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .login-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .error-message {
-            color: #dc3545;
-            font-size: 13px;
-            margin-top: 8px;
-        }
-        
-        .info-text {
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid #e9ecef;
-            font-size: 13px;
-            color: #6c757d;
-            line-height: 1.6;
-        }
-        
-        .proxy-status {
-            margin-top: 16px;
-            padding: 12px;
-            background: #f1f3f5;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #495057;
-            display: none;
-        }
-        
-        .proxy-status.active {
-            display: block;
-        }
-        
-        /* 메인 화면 */
-        .main-container {
-            display: none;
-            min-height: 100vh;
-            background: #f8f9fa;
-        }
-        
-        .main-container.active {
-            display: block;
-        }
-        
         header {
-            background: white;
-            border-bottom: 1px solid #dee2e6;
-            padding: 12px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-        }
-        
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 0 0.5rem;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 1rem;
         }
-        
-        .header-title {
-            font-size: 20px;
+        h1 {
+            font-size: 2rem;
             font-weight: 700;
-            color: #212529;
+            margin: 0;
         }
-        
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
         .date-controls {
             display: flex;
             align-items: center;
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 4px;
+            gap: 0.5rem;
         }
-        
-        .date-btn, .today-btn {
-            padding: 6px 12px;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            font-size: 14px;
+        .date-controls button, #date-picker {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background-color: #fff;
+            box-shadow: 0 2px 4px var(--shadow-color);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
-        
-        .date-btn:hover, .today-btn:hover {
-            background: #f8f9fa;
+        .date-controls button:hover {
+            background-color: #f5f5f7;
+            transform: translateY(-1px);
         }
-        
-        #date-display {
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            min-width: 120px;
-            text-align: center;
+        main {
+            background: var(--panel-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-radius: 20px;
+            border: 1.5px solid var(--panel-border);
+            padding: 1rem;
+            box-shadow: 0 8px 24px var(--shadow-color);
+            overflow: auto;
         }
-        
-        .logout-btn {
-            padding: 6px 16px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .location-group {
+            margin-bottom: 2rem;
         }
-        
-        .logout-btn:hover {
-            background: #c82333;
+        .location-group:last-child {
+            margin-bottom: 0;
         }
-        
-        /* 타임라인 */
-        .content {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-        
-        .location-section {
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        
-        .location-header {
-            padding: 12px 16px;
-            background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
-            border-bottom: 1px solid #dee2e6;
-            font-weight: 600;
-            font-size: 15px;
-            color: #495057;
-        }
-        
-        .timeline-container {
-            overflow-x: auto;
-            padding: 0;
-        }
-        
-        .timeline-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1000px;
-        }
-        
-        .timeline-table thead {
-            background: #f8f9fa;
-            position: sticky;
-            top: 60px;
-            z-index: 10;
-        }
-        
-        .timeline-table th {
-            padding: 10px 0;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: center;
-            border-bottom: 2px solid #dee2e6;
-            color: #495057;
-        }
-        
-        .timeline-table th.room-name {
-            text-align: left;
-            padding-left: 16px;
-            min-width: 150px;
-            position: sticky;
-            left: 0;
-            background: #f8f9fa;
-            z-index: 11;
-        }
-        
-        .timeline-table tbody tr {
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .timeline-table tbody tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .timeline-table td {
-            padding: 0;
-            height: 36px;
-            border-right: 1px solid #f1f3f5;
-            position: relative;
-        }
-        
-        .timeline-table td.room-name {
-            padding: 8px 16px;
-            font-size: 13px;
+        h3 {
+            font-size: 1.25rem;
             font-weight: 500;
-            color: #212529;
+            margin: 0 0 1rem 0.5rem;
+        }
+        .timeline-wrapper {
+            overflow-x: auto;
+        }
+        .timeline-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 900px;
+            table-layout: fixed;
+        }
+        .timeline-table th, .timeline-table td {
+            border: 1px solid #e5e5e5;
+            padding: 0;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .timeline-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: rgba(248, 248, 250, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 0.75em 0;
+        }
+        .timeline-table .room-name-cell {
             position: sticky;
             left: 0;
-            background: white;
-            z-index: 5;
-            border-right: 1px solid #dee2e6;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 1em 0.8em;
+            font-weight: 500;
+            width: 180px;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .timeline-table thead .room-name-cell {
+            z-index: 4;
         }
         
-        .timeline-table tbody tr:hover td.room-name {
-            background: #f8f9fa;
+        .time-slot {
+            height: 45px;
         }
         
-        /* 30분 단위 구분선 */
-        .timeline-table td:nth-child(even) {
-            border-right: 1px solid #dee2e6;
+        .booked {
+            color: white;
+            padding: 0.4em 0.6em;
+            text-align: left;
+            border-radius: 6px;
+            margin: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 4px);
+            width: calc(100% - 4px);
+            box-sizing: border-box;
         }
-        
-        /* 예약 블록 */
-        .reservation {
-            position: absolute;
-            top: 2px;
-            bottom: 2px;
-            left: 2px;
-            right: 2px;
-            border-radius: 4px;
-            padding: 2px 6px;
+        .booked-content {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             overflow: hidden;
+            width: 100%;
+        }
+        .booked-subject {
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .booked-user {
             font-size: 11px;
-            color: white;
-            cursor: default;
-            transition: all 0.2s;
-        }
-        
-        .reservation:hover {
-            transform: scale(1.02);
-            z-index: 2;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        
-        .reservation-title {
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.2;
-        }
-        
-        .reservation-user {
-            font-size: 10px;
-            opacity: 0.9;
+            opacity: 0.8;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         
-        /* 색상 팔레트 */
-        .reservation.color-0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .reservation.color-1 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .reservation.color-2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .reservation.color-3 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .reservation.color-4 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .reservation.color-5 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
-        .reservation.color-6 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-        .reservation.color-7 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
-        .reservation.color-8 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .reservation.color-9 { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
-        
-        .reservation.my-reservation {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            font-weight: 600;
-        }
-        
-        /* 로딩 상태 */
-        .loading {
+        .loader {
+            padding: 5em;
             text-align: center;
-            padding: 40px;
-            color: #6c757d;
+            font-size: 1.2em;
+            color: var(--text-secondary);
         }
-        
-        .loading-spinner {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 12px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error {
-            background: #fff5f5;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-            padding: 12px 16px;
+        .error-note {
+            text-align: center;
+            padding: 1rem;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
             border-radius: 8px;
-            margin: 8px;
-            font-size: 14px;
         }
         
-        /* 반응형 */
+        /* 로그인 모달 */
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-modal.active {
+            display: flex;
+        }
+        .login-dialog {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .login-dialog h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+        }
+        .login-dialog input {
+            width: 100%;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+        .login-dialog button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-dialog button:hover {
+            background: #0051d5;
+        }
+        .login-info {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
         @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
+            body {
+                padding: 0.5rem;
             }
-            
-            .header-controls {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .date-controls {
+                width: 100%;
                 justify-content: space-between;
             }
-            
-            .timeline-table {
-                min-width: 600px;
+            #date-picker {
+                flex-grow: 1;
+                text-align: center;
             }
-            
-            .timeline-table th.room-name,
-            .timeline-table td.room-name {
-                min-width: 100px;
+            main {
+                padding: 0.5rem;
+                border-radius: 12px;
+            }
+            h3 {
+                font-size: 1.1rem;
+            }
+            .room-name-cell {
+                width: 140px;
                 font-size: 12px;
+            }
+            .timeline-table .room-name-cell {
+                position: static;
+                z-index: auto;
             }
         }
     </style>
 </head>
 <body>
-    <!-- 로그인 화면 -->
-    <div id="login-view" class="login-container">
-        <div class="login-card">
-            <h2>KETI 회의실 예약 현황</h2>
-            <p class="subtitle">Dooray API 토큰을 입력하여 시작하세요</p>
-            
-            <div class="input-group">
-                <label for="api-token">API Token</label>
-                <input type="password" id="api-token" placeholder="dooray-api-xxxxx..." autocomplete="off">
-                <div id="error-message" class="error-message"></div>
-            </div>
-            
-            <button id="login-btn" class="login-btn" onclick="login()">접속하기</button>
-            
-            <div id="proxy-status" class="proxy-status"></div>
-            
-            <div class="info-text">
-                <strong>토큰 발급 방법:</strong><br>
-                1. Dooray 로그인 → 2. 설정 → 3. API 토큰 → 4. 새 토큰 생성<br><br>
-                * 토큰은 브라우저에만 저장되며 외부 전송되지 않습니다<br>
-                * CORS 우회를 위해 프록시 서버를 사용합니다
-            </div>
-        </div>
-    </div>
-    
-    <!-- 메인 화면 -->
-    <div id="main-view" class="main-container">
+    <div class="app-container">
         <header>
-            <div class="header-content">
-                <h1 class="header-title">KETI 회의실 예약 현황</h1>
-                <div class="header-controls">
-                    <div class="date-controls">
-                        <button class="date-btn" onclick="changeDate(-1)">◀</button>
-                        <div id="date-display"></div>
-                        <button class="date-btn" onclick="changeDate(1)">▶</button>
-                    </div>
-                    <button class="today-btn" onclick="goToday()">오늘</button>
-                    <button class="logout-btn" onclick="logout()">로그아웃</button>
-                </div>
+            <h1>KETI 회의실 현황</h1>
+            <div class="date-controls">
+                <button id="prev-day" title="이전 날짜"><</button>
+                <input type="date" id="date-picker">
+                <button id="next-day" title="다음 날짜">></button>
+                <button id="today-btn">오늘</button>
             </div>
         </header>
-        
-        <div class="content" id="content">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <div>회의실 정보를 불러오는 중...</div>
+        <main id="main-content"></main>
+    </div>
+    
+    <!-- 로그인 모달 -->
+    <div class="login-modal" id="login-modal">
+        <div class="login-dialog">
+            <h2>API 토큰 입력</h2>
+            <input type="password" id="token-input" placeholder="dooray-api-xxxxx..." value="">
+            <button onclick="saveToken()">저장</button>
+            <div class="login-info">
+                토큰이 없으면 기본 토큰을 사용합니다.<br>
+                토큰은 브라우저에만 저장됩니다.
             </div>
         </div>
     </div>
     
     <script>
-        // 전역 변수
-        const API_BASE = 'https://api.dooray.com';
-        const START_HOUR = 8;
-        const END_HOUR = 20;
-        let currentDate = new Date();
-        let apiToken = null;
-        let currentProxy = null;
+        // 기본 토큰 (필요시 사용)
+        const DEFAULT_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
+        let API_TOKEN = localStorage.getItem('dooray_token') || DEFAULT_TOKEN;
+        let myInfo = {};
+        const START_HOUR = 9;
+        const END_HOUR = 19;
+        const locationColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964'];
         
-        // 프록시 서버 목록 (더 안정적인 것들로 교체)
-        const PROXIES = [
+        // CORS 프록시
+        const CORS_PROXIES = [
             url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
             url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
             url => `https://cors.eu.org/${url}`,
             url => `https://cors-anywhere.herokuapp.com/${url}`,
             url => `https://proxy.cors.sh/${url}`,
-            url => `https://cors.bridged.cc/${url}`
+            url => `https://cors.bridged.cc/${url}`,
+            url => url // 직접 호출 시도
         ];
         
-        // 초기화
-        window.onload = function() {
-            const savedToken = localStorage.getItem('dooray_token');
-            if (savedToken) {
-                apiToken = savedToken;
-                showMainView();
+        let currentProxyIndex = 0;
+        
+        function getLocationColor(locationName) {
+            let hash = 0;
+            for(let i = 0; i < locationName.length; i++) {
+                hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
             }
-            
-            document.getElementById('api-token').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') login();
+            return locationColors[Math.abs(hash % locationColors.length)];
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('date-picker').addEventListener('change', loadAllTimelines);
+            document.getElementById('prev-day').addEventListener('click', () => changeDate(-1));
+            document.getElementById('next-day').addEventListener('click', () => changeDate(1));
+            document.getElementById('today-btn').addEventListener('click', () => {
+                const dp = document.getElementById('date-picker');
+                if(dp.valueAsDate.toDateString() !== new Date().toDateString()) {
+                    dp.valueAsDate = new Date();
+                    loadAllTimelines();
+                }
             });
-        };
+        }
+        
+        function changeDate(offset) {
+            const dp = document.getElementById('date-picker');
+            const cd = dp.valueAsDate;
+            cd.setDate(cd.getDate() + offset);
+            dp.valueAsDate = cd;
+            loadAllTimelines();
+        }
         
         // API 호출 (프록시 자동 전환)
-        async function callAPI(endpoint, params = {}) {
+        async function doorayAPI(endpoint, params = {}) {
+            const baseUrl = `https://api.dooray.com${endpoint}`;
             const queryString = new URLSearchParams(params).toString();
-            const url = `${API_BASE}${endpoint}${queryString ? '?' + queryString : ''}`;
+            const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
             const headers = {
-                'Authorization': `dooray-api ${apiToken}`,
+                'Authorization': `dooray-api ${API_TOKEN}`,
                 'Content-Type': 'application/json'
             };
             
-            // 현재 프록시가 있으면 먼저 시도
-            if (currentProxy !== null) {
+            // 현재 프록시부터 시작해서 모든 프록시 시도
+            for (let i = 0; i < CORS_PROXIES.length; i++) {
+                const proxyIndex = (currentProxyIndex + i) % CORS_PROXIES.length;
                 try {
-                    const proxyUrl = PROXIES[currentProxy](url);
-                    const response = await fetch(proxyUrl, { headers });
-                    if (response.ok) {
-                        return await response.json();
-                    }
-                } catch (e) {}
-            }
-            
-            // 모든 프록시 시도
-            for (let i = 0; i < PROXIES.length; i++) {
-                try {
-                    const proxyUrl = PROXIES[i](url);
-                    const response = await fetch(proxyUrl, { 
-                        headers,
+                    const proxyUrl = CORS_PROXIES[proxyIndex](url);
+                    const response = await fetch(proxyUrl, {
+                        headers: headers,
                         mode: 'cors'
                     });
                     
                     if (response.ok) {
-                        currentProxy = i;
+                        currentProxyIndex = proxyIndex; // 성공한 프록시 기억
                         return await response.json();
                     }
                 } catch (e) {
-                    console.log(`Proxy ${i} failed:`, e.message);
+                    console.log(`Proxy ${proxyIndex} failed:`, e.message);
                 }
             }
             
-            throw new Error('모든 프록시 서버 연결 실패');
+            throw new Error('API 호출 실패');
         }
         
-        // 로그인
-        async function login() {
-            const tokenInput = document.getElementById('api-token');
-            const token = tokenInput.value.trim();
-            const errorDiv = document.getElementById('error-message');
-            const statusDiv = document.getElementById('proxy-status');
-            const loginBtn = document.getElementById('login-btn');
+        async function initializeApp() {
+            document.getElementById('date-picker').valueAsDate = new Date();
+            setupEventListeners();
             
-            if (!token) {
-                errorDiv.textContent = 'API 토큰을 입력해주세요';
-                return;
+            // 토큰 확인 - 실패해도 계속 진행
+            try {
+                const meData = await doorayAPI('/common/v1/members/me');
+                myInfo = meData.result || {};
+            } catch (e) {
+                console.log('사용자 정보 조회 실패 - 계속 진행');
             }
             
-            loginBtn.disabled = true;
-            loginBtn.textContent = '연결 중...';
-            errorDiv.textContent = '';
-            statusDiv.classList.add('active');
-            statusDiv.textContent = '프록시 서버 연결 시도 중...';
+            await loadAllTimelines();
+        }
+        
+        async function loadAllTimelines() {
+            const date = document.getElementById('date-picker').value;
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<p class="loader">회의실 현황을 불러오는 중...</p>';
             
             try {
-                apiToken = token;
-                
-                // 연결 테스트 (카테고리 조회)
-                statusDiv.textContent = '토큰 유효성 확인 중...';
-                const data = await callAPI('/reservation/v1/resource-categories', { size: 1 });
-                
-                if (data && data.result) {
-                    localStorage.setItem('dooray_token', token);
-                    showMainView();
-                } else {
-                    throw new Error('유효하지 않은 토큰입니다');
-                }
-            } catch (error) {
-                apiToken = null;
-                errorDiv.textContent = error.message;
-                statusDiv.textContent = '';
-                statusDiv.classList.remove('active');
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = '접속하기';
-            }
-        }
-        
-        // 로그아웃
-        function logout() {
-            localStorage.removeItem('dooray_token');
-            apiToken = null;
-            currentProxy = null;
-            document.getElementById('login-view').style.display = 'flex';
-            document.getElementById('main-view').classList.remove('active');
-            document.getElementById('api-token').value = '';
-        }
-        
-        // 메인 화면 표시
-        function showMainView() {
-            document.getElementById('login-view').style.display = 'none';
-            document.getElementById('main-view').classList.add('active');
-            updateDateDisplay();
-            loadReservations();
-        }
-        
-        // 날짜 표시 업데이트
-        function updateDateDisplay() {
-            const options = { month: 'long', day: 'numeric', weekday: 'short' };
-            document.getElementById('date-display').textContent = 
-                currentDate.toLocaleDateString('ko-KR', options);
-        }
-        
-        // 날짜 변경
-        function changeDate(days) {
-            currentDate.setDate(currentDate.getDate() + days);
-            updateDateDisplay();
-            loadReservations();
-        }
-        
-        // 오늘로 이동
-        function goToday() {
-            currentDate = new Date();
-            updateDateDisplay();
-            loadReservations();
-        }
-        
-        // 예약 정보 로드
-        async function loadReservations() {
-            const contentDiv = document.getElementById('content');
-            contentDiv.innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>데이터 로딩 중...</div></div>';
-            
-            try {
-                // 1. 카테고리(장소) 목록 가져오기
-                const categoriesData = await callAPI('/reservation/v1/resource-categories', { size: 50 });
-                const categories = (categoriesData.result || []).sort((a, b) => {
+                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
+                const locations = (locRes.result || []).sort((a, b) => {
                     const nameA = a.name || '';
                     const nameB = b.name || '';
-                    if (nameA.includes('판교(글로벌')) return -1;
-                    if (nameB.includes('판교(글로벌')) return 1;
+                    if (nameA === "판교(글로벌R&D센터)") return -1;
+                    if (nameB === "판교(글로벌R&D센터)") return 1;
+                    if (nameA.includes("판교")) return -1;
+                    if (nameB.includes("판교")) return 1;
                     return nameA.localeCompare(nameB);
                 });
                 
-                contentDiv.innerHTML = '';
+                main.innerHTML = '';
                 
-                // 2. 각 카테고리별로 처리
-                for (const category of categories) {
-                    const section = document.createElement('div');
-                    section.className = 'location-section';
-                    contentDiv.appendChild(section);
-                    
-                    loadCategoryReservations(category, section);
+                for (const location of locations) {
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'location-group';
+                    main.appendChild(groupContainer);
+                    fetchAndRenderLocation(location, date, groupContainer);
                 }
             } catch (error) {
-                contentDiv.innerHTML = `<div class="error">데이터 로드 실패: ${error.message}</div>`;
+                main.innerHTML = `<p class="loader" style="color:red;">데이터 로드 실패: ${error.message}</p>`;
             }
         }
         
-        // 카테고리별 예약 로드
-        async function loadCategoryReservations(category, container) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const timeMin = `${dateStr}T00:00:00+09:00`;
-            const nextDate = new Date(currentDate);
-            nextDate.setDate(nextDate.getDate() + 1);
-            const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
-            
+        async function fetchAndRenderLocation(location, date, container) {
             try {
-                // 회의실 목록 가져오기
-                const roomsData = await callAPI('/reservation/v1/reservable-resources', {
-                    resourceCategoryId: category.id,
-                    size: 100
+                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
+                    resourceCategoryId: location.id,
+                    size: 200
                 });
-                const rooms = (roomsData.result || []).sort((a, b) => a.name.localeCompare(b.name));
+                const rooms = roomsRes.result || [];
                 
                 if (rooms.length === 0) {
-                    container.innerHTML = `<div class="location-header">${category.name} (회의실 없음)</div>`;
+                    container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
                     return;
                 }
                 
                 // 예약 정보 가져오기
+                const timeMin = `${date}T00:00:00+09:00`;
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+                
                 const roomIds = rooms.map(r => r.id).join(',');
                 let reservations = [];
                 
                 try {
-                    const resData = await callAPI('/reservation/v1/resource-reservations', {
+                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
                         resourceIds: roomIds,
-                        timeMin,
-                        timeMax,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
                         size: 500
                     });
                     reservations = resData.result || [];
@@ -700,92 +463,106 @@
                     console.log('예약 정보 로드 실패:', e);
                 }
                 
-                // 렌더링
-                renderTimeline(category, rooms, reservations, container);
+                container.innerHTML = renderTimeline(location, rooms, reservations);
                 
-            } catch (error) {
-                container.innerHTML = `<div class="error">${category.name} 로드 실패</div>`;
+            } catch (e) {
+                container.innerHTML = `<div class="error-note"><strong>${location.name}</strong> 데이터 로딩 실패: ${e.message}</div>`;
             }
         }
         
-        // 타임라인 렌더링
-        function renderTimeline(category, rooms, reservations, container) {
-            const totalSlots = (END_HOUR - START_HOUR) * 2;
+        function renderTimeline(location, rooms, reservations) {
+            const locationColor = getLocationColor(location.name);
+            let html = `<h3>${location.name}</h3>`;
             
-            // HTML 생성
-            let html = `<div class="location-header">${category.name}</div>`;
-            html += '<div class="timeline-container"><table class="timeline-table"><thead><tr>';
-            html += '<th class="room-name">회의실</th>';
+            html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
             
-            // 시간 헤더
-            for (let hour = START_HOUR; hour < END_HOUR; hour++) {
-                html += `<th colspan="2">${hour}:00</th>`;
+            for (let i = START_HOUR; i < END_HOUR; i++) {
+                html += `<th colspan="2">${String(i).padStart(2,'0')}</th>`;
             }
             html += '</tr></thead><tbody>';
             
-            // 예약 정보 매핑
-            const resByRoom = {};
-            reservations.forEach(res => {
-                const roomId = res.resource?.id;
+            const resByRoom = (reservations || []).reduce((acc, r) => {
+                const roomId = r.resource?.id;
                 if (roomId) {
-                    if (!resByRoom[roomId]) resByRoom[roomId] = [];
-                    resByRoom[roomId].push(res);
+                    acc[roomId] = acc[roomId] || [];
+                    acc[roomId].push(r);
                 }
-            });
+                return acc;
+            }, {});
             
-            // 각 회의실 행
-            rooms.forEach((room, roomIndex) => {
-                html += `<tr><td class="room-name">${room.name}</td>`;
-                
+            rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                html += `<tr><td class="room-name-cell" title="${room.name}">${room.name}</td>`;
+                const totalSlots = (END_HOUR - START_HOUR) * 2;
                 const slots = Array(totalSlots).fill(null);
-                const roomRes = resByRoom[room.id] || [];
                 
-                // 예약 매핑
-                roomRes.forEach(res => {
+                (resByRoom[room.id] || []).forEach(res => {
                     const start = new Date(res.startedAt);
                     const end = new Date(res.endedAt);
-                    
                     const startSlot = Math.max(0, (start.getHours() - START_HOUR) * 2 + Math.floor(start.getMinutes() / 30));
                     const endSlot = Math.min(totalSlots, (end.getHours() - START_HOUR) * 2 + Math.ceil(end.getMinutes() / 30));
+                    const colspan = endSlot - startSlot;
                     
-                    if (startSlot < totalSlots && endSlot > 0) {
-                        for (let i = startSlot; i < endSlot && i < totalSlots; i++) {
-                            if (i === startSlot) {
-                                slots[i] = {
-                                    colspan: Math.min(endSlot - startSlot, totalSlots - startSlot),
-                                    title: res.subject || '(제목 없음)',
-                                    user: res.users?.from?.member?.name || '예약자 정보 없음',
-                                    colorIndex: roomIndex % 10
-                                };
-                            } else if (i < startSlot + slots[startSlot].colspan) {
-                                slots[i] = 'skip';
-                            }
+                    if (colspan > 0 && startSlot < totalSlots) {
+                        const user = res.users?.from?.member;
+                        const isMy = myInfo.id && user && user.organizationMemberId === myInfo.id;
+                        const userName = user ? user.name : '정보 없음';
+                        
+                        slots[startSlot] = {
+                            colspan,
+                            subject: res.subject || '제목 없음',
+                            userName,
+                            isMyBooking: isMy
+                        };
+                        
+                        for (let i = 1; i < colspan && startSlot + i < totalSlots; i++) {
+                            slots[startSlot + i] = 'skip';
                         }
                     }
                 });
                 
-                // 슬롯 렌더링
-                for (let i = 0; i < totalSlots; i++) {
-                    if (slots[i] === null) {
-                        html += '<td></td>';
-                    } else if (slots[i] !== 'skip') {
-                        const slot = slots[i];
-                        html += `<td colspan="${slot.colspan}">
-                            <div class="reservation color-${slot.colorIndex}">
-                                <div class="reservation-title">${slot.title}</div>
-                                <div class="reservation-user">${slot.user}</div>
+                slots.forEach(s => {
+                    if (s === null) {
+                        html += '<td class="time-slot"></td>';
+                    } else if (s !== 'skip') {
+                        const bgColor = s.isMyBooking ? '#28a745' : locationColor;
+                        html += `<td colspan="${s.colspan}">
+                            <div class="booked" style="background-color:${bgColor};">
+                                <div class="booked-content">
+                                    <div class="booked-subject">${s.subject}</div>
+                                    <span class="booked-user">${s.userName}</span>
+                                </div>
                             </div>
                         </td>`;
-                        i += slot.colspan - 1;
                     }
-                }
+                });
                 
                 html += '</tr>';
             });
             
             html += '</tbody></table></div>';
-            container.innerHTML = html;
+            return html;
         }
+        
+        // 토큰 저장
+        function saveToken() {
+            const token = document.getElementById('token-input').value.trim();
+            if (token) {
+                API_TOKEN = token;
+                localStorage.setItem('dooray_token', token);
+            }
+            document.getElementById('login-modal').classList.remove('active');
+            initializeApp();
+        }
+        
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 't') {
+                document.getElementById('login-modal').classList.add('active');
+                document.getElementById('token-input').focus();
+            }
+        });
+        
+        window.onload = initializeApp;
     </script>
 </body>
 </html>

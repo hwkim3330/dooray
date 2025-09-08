@@ -378,33 +378,56 @@
         // API 호출 (프록시 자동 전환)
         async function doorayAPI(endpoint, params = {}) {
             const baseUrl = `https://api.dooray.com${endpoint}`;
-            const queryString = new URLSearchParams(params).toString();
-            const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
-            const headers = {
-                'Authorization': `dooray-api ${API_TOKEN}`,
-                'Content-Type': 'application/json'
-            };
             
-            // 현재 프록시부터 시작해서 모든 프록시 시도
-            for (let i = 0; i < CORS_PROXIES.length; i++) {
-                const proxyIndex = (currentProxyIndex + i) % CORS_PROXIES.length;
-                try {
-                    const proxyUrl = CORS_PROXIES[proxyIndex](url);
-                    const response = await fetch(proxyUrl, {
-                        headers: headers,
-                        mode: 'cors'
-                    });
-                    
-                    if (response.ok) {
-                        currentProxyIndex = proxyIndex; // 성공한 프록시 기억
-                        return await response.json();
-                    }
-                } catch (e) {
-                    console.log(`Proxy ${proxyIndex} failed:`, e.message);
+            // 토큰을 파라미터에 포함
+            const allParams = {
+                ...params,
+                'token': API_TOKEN
+            };
+            const queryString = new URLSearchParams(allParams).toString();
+            const url = `${baseUrl}?${queryString}`;
+            
+            // 직접 호출 시도 (헤더 없이)
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    return await response.json();
                 }
+            } catch (e) {
+                console.log('Direct call failed, trying proxy...');
             }
             
-            throw new Error('API 호출 실패');
+            // AllOrigins raw 방식 (헤더 없이)
+            try {
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Proxy response not ok');
+                
+                return await response.json();
+            } catch (e) {
+                console.log('AllOrigins failed:', e);
+            }
+            
+            // 다른 프록시 시도
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Corsproxy response not ok');
+                
+                return await response.json();
+            } catch (e) {
+                console.log('Corsproxy failed:', e);
+            }
+            
+            throw new Error('모든 API 호출 방법 실패');
         }
         
         async function initializeApp() {

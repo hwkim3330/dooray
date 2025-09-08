@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>KETI 회의실 현황 (자동새로고침)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        :root {
+            --primary: #4a9eff;
+            --success: #00d4aa;
+            --warning: #ffa500;
+            --danger: #ff5e5e;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            width: 100%;
+            max-width: 1800px;
+        }
+        
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .center-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-clock {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(74, 158, 255, 0.1);
+            border-radius: 12px;
+        }
+        
+        .refresh-controls label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .refresh-controls select {
+            padding: 0.3rem 0.5rem;
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            background: white;
+            color: #333;
+            font-size: 0.85rem;
+        }
+        
+        .refresh-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        
+        .date-section {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .date-controls button, #date-picker {
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .date-controls button:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-panel {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-card {
+            flex: 1;
+            padding: 0.8rem;
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 158, 255, 0.05));
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .status-card h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .status-card p {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        main {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .location-group {
+            margin-bottom: 2.5rem;
+            background: white;
+            border-radius: 16px;
+            padding: 1.2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0.5rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        h3::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .timeline-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .timeline-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 1000px;
+            table-layout: fixed;
+        }
+        
+        .timeline-table th, .timeline-table td {
+            border: 1px solid #e0e0e0;
+            padding: 0;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .timeline-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            padding: 0.8em 0;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .timeline-table .room-name-cell {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            padding: 1em 1em;
+            font-weight: 500;
+            width: 200px;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .timeline-table thead .room-name-cell {
+            z-index: 4;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+        }
+        
+        .time-slot {
+            height: 50px;
+            background: white;
+        }
+        
+        .time-slot:hover {
+            background: rgba(74, 158, 255, 0.05);
+        }
+        
+        .booked {
+            color: white;
+            padding: 0.5em 0.7em;
+            text-align: left;
+            border-radius: 8px;
+            margin: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 6px);
+            width: calc(100% - 6px);
+            box-sizing: border-box;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .booked::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+            pointer-events: none;
+        }
+        
+        .booked:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+        
+        .booked-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        .booked-subject {
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+        
+        .booked-user {
+            font-size: 11px;
+            opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .loader {
+            padding: 5em;
+            text-align: center;
+            font-size: 1.3em;
+            color: #666;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            transform-origin: left;
+            animation: progress 60s linear infinite;
+            z-index: 9999;
+        }
+        
+        @keyframes progress {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+        
+        .last-update {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0.8rem 1.2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            h1 { font-size: 1.8rem; }
+            .header-clock { font-size: 2rem; }
+            .status-panel { flex-direction: column; }
+            .date-section { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar"></div>
+    <div class="app-container">
+        <header>
+            <h1>KETI 회의실 현황</h1>
+            <div class="center-section">
+                <div class="header-clock" id="header-clock">00:00:00</div>
+                <div class="refresh-controls">
+                    <span class="refresh-indicator"></span>
+                    <label>자동 새로고침:</label>
+                    <select id="refresh-interval">
+                        <option value="30000">30초</option>
+                        <option value="60000" selected>1분</option>
+                        <option value="120000">2분</option>
+                        <option value="300000">5분</option>
+                        <option value="0">끄기</option>
+                    </select>
+                </div>
+            </div>
+            <div class="date-section">
+                <div class="date-controls">
+                    <button id="prev-day" title="이전 날짜">◀</button>
+                    <input type="date" id="date-picker">
+                    <button id="next-day" title="다음 날짜">▶</button>
+                    <button id="today-btn">오늘</button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="status-panel" id="status-panel">
+            <div class="status-card">
+                <h4>전체 회의실</h4>
+                <p id="total-rooms">0</p>
+            </div>
+            <div class="status-card">
+                <h4>현재 사용중</h4>
+                <p id="current-occupied">0</p>
+            </div>
+            <div class="status-card">
+                <h4>오늘 예약</h4>
+                <p id="total-reservations">0</p>
+            </div>
+            <div class="status-card">
+                <h4>사용 가능</h4>
+                <p id="available-now">0</p>
+            </div>
+        </div>
+        
+        <main id="main-content"></main>
+    </div>
+    
+    <div class="last-update" id="last-update">
+        <span>마지막 업데이트:</span>
+        <strong id="update-time">-</strong>
+    </div>
+    
+    <script>
+        const API_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
+        let myInfo = {};
+        const START_HOUR = 9;
+        const END_HOUR = 19;
+        const locationColors = [
+            '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', 
+            '#30cfd0', '#a8edea', '#ff9a9e', '#ffecd2', '#a1c4fd'
+        ];
+        
+        let refreshTimer = null;
+        let lastUpdateTime = null;
+        let cachedMethod = null;
+        let stats = {
+            totalRooms: 0,
+            currentOccupied: 0,
+            totalReservations: 0,
+            availableNow: 0
+        };
+        
+        // CORS 메서드들
+        const CORS_METHODS = [
+            {
+                name: 'Direct',
+                call: async (url) => {
+                    return await fetch(url, {
+                        headers: { 'Content-Type': 'application/json' },
+                        mode: 'cors'
+                    });
+                }
+            },
+            {
+                name: 'AllOrigins',
+                call: async (url) => {
+                    return await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
+                }
+            },
+            {
+                name: 'CorsProxy',
+                call: async (url) => {
+                    return await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+                }
+            }
+        ];
+        
+        function getLocationColor(locationName) {
+            let hash = 0;
+            for(let i = 0; i < locationName.length; i++) {
+                hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return locationColors[Math.abs(hash % locationColors.length)];
+        }
+        
+        function updateStats() {
+            document.getElementById('total-rooms').textContent = stats.totalRooms;
+            document.getElementById('current-occupied').textContent = stats.currentOccupied;
+            document.getElementById('total-reservations').textContent = stats.totalReservations;
+            document.getElementById('available-now').textContent = stats.availableNow;
+        }
+        
+        function updateLastUpdateTime() {
+            if (lastUpdateTime) {
+                const now = new Date();
+                const diff = Math.floor((now - lastUpdateTime) / 1000);
+                const minutes = Math.floor(diff / 60);
+                const seconds = diff % 60;
+                
+                let timeStr = '';
+                if (minutes > 0) {
+                    timeStr = `${minutes}분 ${seconds}초 전`;
+                } else {
+                    timeStr = `${seconds}초 전`;
+                }
+                
+                document.getElementById('update-time').textContent = timeStr;
+            }
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('date-picker').addEventListener('change', () => {
+                loadAllTimelines();
+                resetAutoRefresh();
+            });
+            
+            document.getElementById('prev-day').addEventListener('click', () => changeDate(-1));
+            document.getElementById('next-day').addEventListener('click', () => changeDate(1));
+            
+            document.getElementById('today-btn').addEventListener('click', () => {
+                const dp = document.getElementById('date-picker');
+                const today = new Date();
+                if(dp.valueAsDate.toDateString() !== today.toDateString()) {
+                    dp.valueAsDate = today;
+                    loadAllTimelines();
+                    resetAutoRefresh();
+                }
+            });
+            
+            document.getElementById('refresh-interval').addEventListener('change', (e) => {
+                resetAutoRefresh();
+            });
+        }
+        
+        function changeDate(offset) {
+            const dp = document.getElementById('date-picker');
+            const cd = dp.valueAsDate;
+            cd.setDate(cd.getDate() + offset);
+            dp.valueAsDate = cd;
+            loadAllTimelines();
+            resetAutoRefresh();
+        }
+        
+        function resetAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+            
+            const interval = parseInt(document.getElementById('refresh-interval').value);
+            if (interval > 0) {
+                refreshTimer = setInterval(() => {
+                    loadAllTimelines(true);
+                    resetProgressBar();
+                }, interval);
+                resetProgressBar();
+            }
+        }
+        
+        function resetProgressBar() {
+            const bar = document.querySelector('.progress-bar');
+            const interval = parseInt(document.getElementById('refresh-interval').value);
+            if (interval > 0) {
+                bar.style.animation = 'none';
+                setTimeout(() => {
+                    bar.style.animation = `progress ${interval/1000}s linear infinite`;
+                }, 10);
+            } else {
+                bar.style.display = 'none';
+            }
+        }
+        
+        async function doorayAPI(endpoint, params = {}) {
+            const baseUrl = `https://api.dooray.com${endpoint}`;
+            const queryParams = new URLSearchParams({
+                ...params,
+                token: API_TOKEN
+            }).toString();
+            const url = `${baseUrl}?${queryParams}`;
+            
+            // 캐시된 메서드 먼저 시도
+            if (cachedMethod) {
+                try {
+                    const response = await cachedMethod.call(url);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (e) {
+                    cachedMethod = null;
+                }
+            }
+            
+            // 모든 메서드 시도
+            for (const method of CORS_METHODS) {
+                try {
+                    const response = await method.call(url);
+                    if (response.ok) {
+                        cachedMethod = method;
+                        return await response.json();
+                    }
+                } catch (e) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            
+            throw new Error('API 호출 실패');
+        }
+        
+        async function initializeApp() {
+            document.getElementById('date-picker').valueAsDate = new Date();
+            setupEventListeners();
+            
+            try {
+                const meData = await doorayAPI('/common/v1/members/me');
+                myInfo = meData.result || {};
+            } catch (e) {
+                console.log('사용자 정보 조회 실패');
+            }
+            
+            await loadAllTimelines();
+            resetAutoRefresh();
+            
+            // 매초 시간 업데이트
+            setInterval(updateLastUpdateTime, 1000);
+        }
+        
+        async function loadAllTimelines(silent = false) {
+            const date = document.getElementById('date-picker').value;
+            const main = document.getElementById('main-content');
+            
+            if (!silent) {
+                main.innerHTML = '<p class="loader">🔄 회의실 현황을 불러오는 중...</p>';
+            }
+            
+            // 통계 초기화
+            stats = {
+                totalRooms: 0,
+                currentOccupied: 0,
+                totalReservations: 0,
+                availableNow: 0
+            };
+            
+            try {
+                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
+                const locations = (locRes.result || []).sort((a, b) => {
+                    const nameA = a.name || '';
+                    const nameB = b.name || '';
+                    if (nameA.includes("판교")) return -1;
+                    if (nameB.includes("판교")) return 1;
+                    return nameA.localeCompare(nameB);
+                });
+                
+                const newContent = document.createElement('div');
+                
+                for (const location of locations) {
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'location-group';
+                    newContent.appendChild(groupContainer);
+                    await fetchAndRenderLocation(location, date, groupContainer);
+                }
+                
+                main.innerHTML = '';
+                main.appendChild(newContent);
+                lastUpdateTime = new Date();
+                updateStats();
+                
+            } catch (error) {
+                if (!silent) {
+                    main.innerHTML = `<p class="loader" style="color:#ff5e5e;">❌ 데이터 로드 실패: ${error.message}</p>`;
+                }
+            }
+        }
+        
+        async function fetchAndRenderLocation(location, date, container) {
+            try {
+                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
+                    resourceCategoryId: location.id,
+                    size: 200
+                });
+                const rooms = roomsRes.result || [];
+                
+                if (rooms.length === 0) {
+                    container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
+                    return;
+                }
+                
+                stats.totalRooms += rooms.length;
+                
+                const timeMin = `${date}T00:00:00+09:00`;
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+                
+                const roomIds = rooms.map(r => r.id).join(',');
+                let reservations = [];
+                
+                try {
+                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
+                        resourceIds: roomIds,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        size: 500
+                    });
+                    reservations = resData.result || [];
+                    stats.totalReservations += reservations.length;
+                    
+                    // 현재 시간 기준 사용중 계산
+                    const now = new Date();
+                    const currentOccupied = reservations.filter(r => {
+                        const start = new Date(r.startedAt);
+                        const end = new Date(r.endedAt);
+                        return start <= now && end >= now;
+                    });
+                    stats.currentOccupied += currentOccupied.length;
+                    stats.availableNow = stats.totalRooms - stats.currentOccupied;
+                    
+                } catch (e) {
+                    console.log('예약 정보 로드 실패:', e);
+                }
+                
+                container.innerHTML = renderTimeline(location, rooms, reservations);
+                
+            } catch (e) {
+                container.innerHTML = `<div class="error-note"><strong>${location.name}</strong> 데이터 로딩 실패</div>`;
+            }
+        }
+        
+        function renderTimeline(location, rooms, reservations) {
+            const locationColor = getLocationColor(location.name);
+            let html = `<h3>${location.name}</h3>`;
+            
+            html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
+            
+            for (let i = START_HOUR; i < END_HOUR; i++) {
+                html += `<th colspan="2">${String(i).padStart(2,'0')}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            const resByRoom = (reservations || []).reduce((acc, r) => {
+                const roomId = r.resource?.id;
+                if (roomId) {
+                    acc[roomId] = acc[roomId] || [];
+                    acc[roomId].push(r);
+                }
+                return acc;
+            }, {});
+            
+            rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                html += `<tr><td class="room-name-cell" title="${room.name}">${room.name}</td>`;
+                const totalSlots = (END_HOUR - START_HOUR) * 2;
+                const slots = Array(totalSlots).fill(null);
+                
+                (resByRoom[room.id] || []).forEach(res => {
+                    const start = new Date(res.startedAt);
+                    const end = new Date(res.endedAt);
+                    const startSlot = Math.max(0, (start.getHours() - START_HOUR) * 2 + Math.floor(start.getMinutes() / 30));
+                    const endSlot = Math.min(totalSlots, (end.getHours() - START_HOUR) * 2 + Math.ceil(end.getMinutes() / 30));
+                    const colspan = endSlot - startSlot;
+                    
+                    if (colspan > 0 && startSlot < totalSlots) {
+                        const user = res.users?.from?.member;
+                        const isMy = myInfo.id && user && user.organizationMemberId === myInfo.id;
+                        const userName = user ? user.name : '정보 없음';
+                        
+                        slots[startSlot] = {
+                            colspan,
+                            subject: res.subject || '제목 없음',
+                            userName,
+                            isMyBooking: isMy
+                        };
+                        
+                        for (let i = 1; i < colspan && startSlot + i < totalSlots; i++) {
+                            slots[startSlot + i] = 'skip';
+                        }
+                    }
+                });
+                
+                slots.forEach(s => {
+                    if (s === null) {
+                        html += '<td class="time-slot"></td>';
+                    } else if (s !== 'skip') {
+                        const bgColor = s.isMyBooking ? 'var(--success)' : locationColor;
+                        html += `<td colspan="${s.colspan}">
+                            <div class="booked" style="background: linear-gradient(135deg, ${bgColor}, ${bgColor}dd);">
+                                <div class="booked-content">
+                                    <div class="booked-subject">${s.subject}</div>
+                                    <span class="booked-user">${s.userName}</span>
+                                </div>
+                            </div>
+                        </td>`;
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { hour12: false });
+            document.getElementById('header-clock').textContent = timeString;
+        }
+        
+        window.onload = function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            initializeApp();
+        };
+    </script>
+</body>
+</html>

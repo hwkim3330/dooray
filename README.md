@@ -2,19 +2,46 @@
 
 GitHub Pages를 통해 호스팅되는 Dooray 회의실 예약 현황 조회 도구입니다.
 
-## 사용 방법
+## 🎨 버전별 사용 방법
 
-### 라이트 모드
+### 📱 기본 버전 (index.html)
 **https://hwkim3330.github.io/dooray/**
 - 기본 밝은 테마
 - 중앙 실시간 시계
+- 반응형 디자인
 - 기본 토큰 내장
 
-### 다크 모드  
+### 🌙 다크 모드 (dark.html)
 **https://hwkim3330.github.io/dooray/dark.html**
 - 다크 테마 (네온 블루 + 그라디언트)
 - 대형 화면 최적화
 - 눈이 편한 야간 모드
+- 향상된 CORS 처리
+
+### ⚡ 안정화 버전 (stable.html)
+**https://hwkim3330.github.io/dooray/stable.html**
+- 안정성 중심 설계
+- 연결 상태 실시간 표시
+- 자동 새로고침 (1분 간격)
+- 수동 새로고침 버튼
+- 마지막 업데이트 시간 표시
+
+### 🔄 자동 새로고침 버전 (auto.html)
+**https://hwkim3330.github.io/dooray/auto.html**
+- 프리미엄 디자인
+- 자동 새로고침 간격 설정 가능 (30초/1분/2분/5분)
+- 실시간 통계 (전체/사용중/예약/가능)
+- 진행 상태바
+- 그라디언트 배경
+
+### 📊 대시보드 버전 (dashboard.html)
+**https://hwkim3330.github.io/dooray/dashboard.html**
+- 전문가용 대시보드 UI
+- 사이드바 네비게이션
+- 실시간 통계 카드
+- 위치별 필터링
+- 다크 테마 전용
+- 자동 새로고침 (1분)
 
 ## API 토큰 발급 방법
 

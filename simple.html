@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>KETI 회의실 현황 (심플 버전)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #333;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        button, input[type="date"] {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #f0f0f0;
+        }
+        
+        .loader {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .location-section {
+            margin-bottom: 30px;
+        }
+        
+        .location-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #007aff;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .timeline-table th,
+        .timeline-table td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .timeline-table th {
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+        
+        .timeline-table .room-name {
+            text-align: left;
+            font-weight: 500;
+            background: #fafafa;
+            min-width: 150px;
+        }
+        
+        .booked {
+            background: #007aff;
+            color: white;
+            border-radius: 4px;
+            padding: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .booked.my-booking {
+            background: #34c759;
+        }
+        
+        .error {
+            color: #ff3b30;
+            padding: 20px;
+            text-align: center;
+            background: #fff3f3;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .proxy-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .proxy-status.success {
+            border-left: 4px solid #34c759;
+        }
+        
+        .proxy-status.error {
+            border-left: 4px solid #ff3b30;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>KETI 회의실 예약 현황</h1>
+            <div class="controls">
+                <button onclick="changeDate(-1)">◀</button>
+                <input type="date" id="datePicker">
+                <button onclick="changeDate(1)">▶</button>
+                <button onclick="goToday()">오늘</button>
+                <button onclick="refresh()">🔄 새로고침</button>
+            </div>
+        </header>
+        
+        <main id="content">
+            <div class="loader">데이터를 불러오는 중...</div>
+        </main>
+    </div>
+    
+    <div class="proxy-status" id="proxyStatus">연결 대기중...</div>
+    
+    <script>
+        // 설정
+        const API_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
+        const START_HOUR = 9;
+        const END_HOUR = 19;
+        
+        // 프록시 서버 목록 (우선순위 순)
+        const PROXY_SERVERS = [
+            // 1. 직접 호출 (CORS 정책이 허용하는 경우)
+            {
+                name: 'Direct',
+                url: (endpoint, params) => {
+                    const query = new URLSearchParams(params).toString();
+                    return `https://api.dooray.com${endpoint}${query ? '?' + query : ''}`;
+                },
+                headers: () => ({
+                    'Authorization': `dooray-api ${API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                })
+            },
+            // 2. AllOrigins (헤더 지원 안함, GET only)
+            {
+                name: 'AllOrigins',
+                url: (endpoint, params) => {
+                    const doorayUrl = `https://api.dooray.com${endpoint}?${new URLSearchParams(params).toString()}`;
+                    return `https://api.allorigins.win/get?url=${encodeURIComponent(doorayUrl)}`;
+                },
+                headers: () => ({}),
+                parseResponse: async (response) => {
+                    const data = await response.json();
+                    if (data.status.http_code === 200) {
+                        return JSON.parse(data.contents);
+                    }
+                    throw new Error('AllOrigins failed');
+                }
+            },
+            // 3. CorsProxy (가끔 작동)
+            {
+                name: 'CorsProxy',
+                url: (endpoint, params) => {
+                    const doorayUrl = `https://api.dooray.com${endpoint}?${new URLSearchParams(params).toString()}`;
+                    return `https://corsproxy.io/?${encodeURIComponent(doorayUrl)}`;
+                },
+                headers: () => ({
+                    'Authorization': `dooray-api ${API_TOKEN}`
+                })
+            }
+        ];
+        
+        let currentProxyIndex = 0;
+        let workingProxy = null;
+        
+        // API 호출 함수
+        async function callAPI(endpoint, params = {}) {
+            // 작동하는 프록시가 있으면 먼저 시도
+            if (workingProxy !== null) {
+                try {
+                    const proxy = PROXY_SERVERS[workingProxy];
+                    const response = await fetch(proxy.url(endpoint, params), {
+                        method: 'GET',
+                        headers: proxy.headers()
+                    });
+                    
+                    if (response.ok) {
+                        updateProxyStatus(`✅ ${proxy.name} 연결됨`, 'success');
+                        return proxy.parseResponse ? 
+                            await proxy.parseResponse(response) : 
+                            await response.json();
+                    }
+                } catch (e) {
+                    console.log(`Cached proxy failed: ${e.message}`);
+                    workingProxy = null;
+                }
+            }
+            
+            // 모든 프록시 순차적으로 시도
+            for (let i = 0; i < PROXY_SERVERS.length; i++) {
+                const proxy = PROXY_SERVERS[i];
+                updateProxyStatus(`⏳ ${proxy.name} 시도중...`, 'loading');
+                
+                try {
+                    const response = await fetch(proxy.url(endpoint, params), {
+                        method: 'GET',
+                        headers: proxy.headers()
+                    });
+                    
+                    if (response.ok) {
+                        workingProxy = i;
+                        updateProxyStatus(`✅ ${proxy.name} 연결됨`, 'success');
+                        return proxy.parseResponse ? 
+                            await proxy.parseResponse(response) : 
+                            await response.json();
+                    }
+                } catch (e) {
+                    console.log(`${proxy.name} failed: ${e.message}`);
+                }
+                
+                // 잠시 대기 (rate limiting 방지)
+                await new Promise(r => setTimeout(r, 200));
+            }
+            
+            updateProxyStatus('❌ 연결 실패', 'error');
+            throw new Error('모든 연결 방법 실패');
+        }
+        
+        // 프록시 상태 업데이트
+        function updateProxyStatus(message, status) {
+            const elem = document.getElementById('proxyStatus');
+            elem.textContent = message;
+            elem.className = `proxy-status ${status}`;
+        }
+        
+        // 날짜 변경
+        function changeDate(offset) {
+            const picker = document.getElementById('datePicker');
+            const date = new Date(picker.value);
+            date.setDate(date.getDate() + offset);
+            picker.value = date.toISOString().split('T')[0];
+            loadData();
+        }
+        
+        function goToday() {
+            document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+            loadData();
+        }
+        
+        function refresh() {
+            loadData();
+        }
+        
+        // 데이터 로드
+        async function loadData() {
+            const date = document.getElementById('datePicker').value;
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loader">데이터를 불러오는 중...</div>';
+            
+            try {
+                // 1. 위치 목록 가져오기
+                const locData = await callAPI('/reservation/v1/resource-categories', { size: 20 });
+                const locations = locData.result || [];
+                
+                let html = '';
+                
+                // 2. 각 위치별로 처리
+                for (const location of locations) {
+                    html += `<div class="location-section">`;
+                    html += `<div class="location-title">${location.name}</div>`;
+                    
+                    try {
+                        // 회의실 목록
+                        const roomData = await callAPI('/reservation/v1/reservable-resources', {
+                            resourceCategoryId: location.id,
+                            size: 200
+                        });
+                        const rooms = roomData.result || [];
+                        
+                        if (rooms.length === 0) {
+                            html += '<div class="error">회의실이 없습니다</div>';
+                            html += '</div>';
+                            continue;
+                        }
+                        
+                        // 예약 정보
+                        const timeMin = `${date}T00:00:00+09:00`;
+                        const nextDate = new Date(date);
+                        nextDate.setDate(nextDate.getDate() + 1);
+                        const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+                        
+                        let reservations = [];
+                        try {
+                            const resData = await callAPI('/reservation/v1/resource-reservations', {
+                                resourceIds: rooms.map(r => r.id).join(','),
+                                timeMin: timeMin,
+                                timeMax: timeMax,
+                                size: 500
+                            });
+                            reservations = resData.result || [];
+                        } catch (e) {
+                            console.log('예약 정보 로드 실패');
+                        }
+                        
+                        // 타임라인 테이블 생성
+                        html += createTimeline(rooms, reservations);
+                        
+                    } catch (e) {
+                        html += `<div class="error">데이터 로드 실패: ${e.message}</div>`;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error">전체 로드 실패: ${error.message}</div>`;
+            }
+        }
+        
+        // 타임라인 생성
+        function createTimeline(rooms, reservations) {
+            let html = '<div style="overflow-x: auto;"><table class="timeline-table"><thead><tr><th>회의실</th>';
+            
+            // 시간 헤더
+            for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+                html += `<th colspan="2">${hour}:00</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            // 예약을 방별로 그룹화
+            const resByRoom = {};
+            reservations.forEach(res => {
+                const roomId = res.resource?.id;
+                if (roomId) {
+                    if (!resByRoom[roomId]) resByRoom[roomId] = [];
+                    resByRoom[roomId].push(res);
+                }
+            });
+            
+            // 각 방별 행 생성
+            rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                html += `<tr><td class="room-name">${room.name}</td>`;
+                
+                const totalSlots = (END_HOUR - START_HOUR) * 2;
+                const slots = Array(totalSlots).fill(null);
+                
+                // 예약 정보를 슬롯에 매핑
+                (resByRoom[room.id] || []).forEach(res => {
+                    const start = new Date(res.startedAt);
+                    const end = new Date(res.endedAt);
+                    const startSlot = Math.max(0, (start.getHours() - START_HOUR) * 2 + Math.floor(start.getMinutes() / 30));
+                    const endSlot = Math.min(totalSlots, (end.getHours() - START_HOUR) * 2 + Math.ceil(end.getMinutes() / 30));
+                    const colspan = endSlot - startSlot;
+                    
+                    if (colspan > 0 && startSlot < totalSlots) {
+                        slots[startSlot] = {
+                            colspan,
+                            subject: res.subject || '예약',
+                            user: res.users?.from?.member?.name || ''
+                        };
+                        
+                        for (let i = 1; i < colspan; i++) {
+                            if (startSlot + i < totalSlots) {
+                                slots[startSlot + i] = 'skip';
+                            }
+                        }
+                    }
+                });
+                
+                // 슬롯 렌더링
+                slots.forEach(slot => {
+                    if (slot === null) {
+                        html += '<td></td>';
+                    } else if (slot !== 'skip') {
+                        html += `<td colspan="${slot.colspan}">
+                            <div class="booked" title="${slot.subject} - ${slot.user}">
+                                ${slot.subject}
+                            </div>
+                        </td>`;
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+        
+        // 초기화
+        window.onload = function() {
+            document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+            loadData();
+        };
+    </script>
+</body>
+</html>

@@ -399,16 +399,305 @@
     </div>
     
     <script>
-        // 기본 토큰 (필요시 사용)
-        const DEFAULT_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
-        let API_TOKEN = localStorage.getItem('dooray_token') || DEFAULT_TOKEN;
-        let myInfo = {};
-        const START_HOUR = 9;
-        const END_HOUR = 19;
-        const locationColors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#30cfd0', '#a8edea', '#ff9a9e', '#ffecd2', '#a1c4fd'];
+// Dooray API 공통 모듈
+// 모든 HTML 파일에서 사용할 수 있는 통합 API 처리 모듈
+
+const DoorayAPI = {
+    // 기본 설정
+    config: {
+        API_TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+        CACHE_DURATION: 5 * 60 * 1000, // 5분
+        START_HOUR: 9,
+        END_HOUR: 19
+    },
+
+    // 캐시 관리
+    cache: new Map(),
+    cacheTimestamps: new Map(),
+
+    // 작동하는 프록시 메서드 저장
+    workingMethod: null,
+
+    // 캐시 체크
+    getFromCache(key) {
+        const cached = this.cache.get(key);
+        const timestamp = this.cacheTimestamps.get(key);
         
-        // CORS 프록시는 이제 CORS_METHODS 배열에서 관리됩니다
-        let workingCorsMethod = null;
+        if (cached && timestamp && (Date.now() - timestamp < this.config.CACHE_DURATION)) {
+            return cached;
+        }
+        
+        return null;
+    },
+
+    // 캐시 저장
+    setCache(key, data) {
+        this.cache.set(key, data);
+        this.cacheTimestamps.set(key, Date.now());
+    },
+
+    // 캐시 클리어
+    clearCache() {
+        this.cache.clear();
+        this.cacheTimestamps.clear();
+    },
+
+    // API 호출 메서드들
+    async directCall(url) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `dooray-api ${this.config.API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                mode: 'cors'
+            });
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            // 실패 시 null 반환
+        }
+        return null;
+    },
+
+    async allOriginsProxy(url) {
+        try {
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status && data.status.http_code === 200) {
+                    return JSON.parse(data.contents);
+                }
+            }
+        } catch (e) {
+            // 실패 시 null 반환
+        }
+        return null;
+    },
+
+    async corsProxy(url) {
+        try {
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, {
+                headers: {
+                    'Authorization': `dooray-api ${this.config.API_TOKEN}`
+                }
+            });
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            // 실패 시 null 반환
+        }
+        return null;
+    },
+
+    async thingProxy(url) {
+        try {
+            const proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
+            const response = await fetch(proxyUrl, {
+                headers: {
+                    'Authorization': `dooray-api ${this.config.API_TOKEN}`
+                }
+            });
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            // 실패 시 null 반환
+        }
+        return null;
+    },
+
+    async hoppscotchProxy(url) {
+        try {
+            const proxyUrl = `https://proxy.hoppscotch.io/${url}`;
+            const response = await fetch(proxyUrl, {
+                headers: {
+                    'Authorization': `dooray-api ${this.config.API_TOKEN}`,
+                    'x-proxy-key': 'hoppscotch'
+                }
+            });
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (e) {
+            // 실패 시 null 반환
+        }
+        return null;
+    },
+
+    // 메인 API 호출 함수
+    async call(endpoint, params = {}) {
+        const baseUrl = `https://api.dooray.com${endpoint}`;
+        const queryString = new URLSearchParams(params).toString();
+        const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
+        
+        // 캐시 확인
+        const cacheKey = `${endpoint}_${queryString}`;
+        const cached = this.getFromCache(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        
+        // 작동하는 메서드가 있으면 먼저 시도
+        if (this.workingMethod) {
+            try {
+                const result = await this[this.workingMethod](url);
+                if (result) {
+                    this.setCache(cacheKey, result);
+                    return result;
+                }
+            } catch (e) {
+                console.log('Cached method failed, trying others...');
+                this.workingMethod = null;
+            }
+        }
+        
+        // 모든 메서드 순차 시도
+        const methods = [
+            'directCall',
+            'allOriginsProxy',
+            'corsProxy',
+            'thingProxy',
+            'hoppscotchProxy'
+        ];
+        
+        for (const method of methods) {
+            try {
+                const result = await this[method](url);
+                if (result) {
+                    this.workingMethod = method;
+                    this.setCache(cacheKey, result);
+                    this.showStatus(`✓ ${method} 연결 성공`, 'success');
+                    return result;
+                }
+            } catch (e) {
+                console.log(`Method ${method} failed:`, e);
+            }
+            // Rate limiting 방지
+            await new Promise(r => setTimeout(r, 100));
+        }
+        
+        this.showStatus('✗ API 연결 실패', 'error');
+        throw new Error('모든 API 호출 방법이 실패했습니다');
+    },
+
+    // 상태 표시 (선택적)
+    showStatus(message, type) {
+        // 기존 상태 요소가 있으면 업데이트
+        let statusEl = document.getElementById('api-status');
+        if (!statusEl) {
+            statusEl = document.createElement('div');
+            statusEl.id = 'api-status';
+            statusEl.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 10px 15px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                font-size: 12px;
+                z-index: 1000;
+                transition: opacity 0.3s;
+            `;
+            document.body.appendChild(statusEl);
+        }
+        
+        statusEl.textContent = message;
+        statusEl.style.borderLeft = `4px solid ${type === 'success' ? '#34c759' : '#ff3b30'}`;
+        statusEl.style.color = type === 'success' ? '#34c759' : '#ff3b30';
+        statusEl.style.opacity = '1';
+        
+        setTimeout(() => {
+            statusEl.style.opacity = '0';
+        }, 3000);
+    },
+
+    // 사용자 정보 가져오기
+    async getMyInfo() {
+        try {
+            const response = await this.call('/common/v1/members/me');
+            return response.result || {};
+        } catch (error) {
+            console.log('Failed to load user info:', error);
+            return {};
+        }
+    },
+
+    // 위치 목록 가져오기
+    async getLocations() {
+        try {
+            const response = await this.call('/reservation/v1/resource-categories', { size: 20 });
+            return (response.result || []).sort((a, b) => {
+                const nameA = a.name || '';
+                const nameB = b.name || '';
+                if (nameA.includes("판교")) return -1;
+                if (nameB.includes("판교")) return 1;
+                return nameA.localeCompare(nameB);
+            });
+        } catch (error) {
+            console.error('Failed to load locations:', error);
+            return [];
+        }
+    },
+
+    // 회의실 목록 가져오기
+    async getRooms(locationId) {
+        try {
+            const response = await this.call('/reservation/v1/reservable-resources', {
+                resourceCategoryId: locationId,
+                size: 200
+            });
+            return response.result || [];
+        } catch (error) {
+            console.error('Failed to load rooms:', error);
+            return [];
+        }
+    },
+
+    // 예약 정보 가져오기
+    async getReservations(roomIds, date) {
+        try {
+            const timeMin = `${date}T00:00:00+09:00`;
+            const nextDate = new Date(date);
+            nextDate.setDate(nextDate.getDate() + 1);
+            const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+            
+            const response = await this.call('/reservation/v1/resource-reservations', {
+                resourceIds: roomIds,
+                timeMin: timeMin,
+                timeMax: timeMax,
+                size: 500
+            });
+            return response.result || [];
+        } catch (error) {
+            console.log('Failed to load reservations:', error);
+            return [];
+        }
+    },
+
+    // 색상 생성 헬퍼
+    getLocationColor(locationName) {
+        const colors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964'];
+        let hash = 0;
+        for (let i = 0; i < locationName.length; i++) {
+            hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash % colors.length)];
+    }
+};
+
+// 전역으로 사용 가능하도록 설정
+window.DoorayAPI = DoorayAPI;
+    </script>
+    <script>
+        let myInfo = {};
+        const START_HOUR = DoorayAPI.config.START_HOUR;
+        const END_HOUR = DoorayAPI.config.END_HOUR;
         
         function updateCorsStatus(method, status, message) {
             const statusEl = document.getElementById('cors-status');
@@ -418,13 +707,8 @@
             }
         }
         
-        function getLocationColor(locationName) {
-            let hash = 0;
-            for(let i = 0; i < locationName.length; i++) {
-                hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return locationColors[Math.abs(hash % locationColors.length)];
-        }
+        // Override DoorayAPI status display to use our CORS status
+        DoorayAPI.showStatus = updateCorsStatus;
         
         function setupEventListeners() {
             document.getElementById('date-picker').addEventListener('change', loadAllTimelines);
@@ -447,163 +731,13 @@
             loadAllTimelines();
         }
         
-        // CORS 프록시 목록 (우선순위순 - 작동하는 방법부터 시도)
-        const CORS_METHODS = [
-            {
-                name: 'Token-Parameter-Direct',
-                call: async (baseUrl, headers) => {
-                    // Use token as URL parameter instead of header (like the working index.html)
-                    const urlWithToken = baseUrl.includes('?') 
-                        ? `${baseUrl}&token=${API_TOKEN}` 
-                        : `${baseUrl}?token=${API_TOKEN}`;
-                    return await fetch(urlWithToken, {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        mode: 'cors'
-                    });
-                }
-            },
-            {
-                name: 'AllOrigins-Raw-Token',
-                call: async (baseUrl, headers) => {
-                    // For AllOrigins raw, we need to add token as parameter since headers aren't supported
-                    const urlWithToken = baseUrl.includes('?') 
-                        ? `${baseUrl}&token=${API_TOKEN}` 
-                        : `${baseUrl}?token=${API_TOKEN}`;
-                    return await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(urlWithToken)}`);
-                }
-            },
-            {
-                name: 'CorsProxy-Token',
-                call: async (baseUrl, headers) => {
-                    const urlWithToken = baseUrl.includes('?') 
-                        ? `${baseUrl}&token=${API_TOKEN}` 
-                        : `${baseUrl}?token=${API_TOKEN}`;
-                    return await fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithToken)}`, {
-                        method: 'GET'
-                    });
-                }
-            },
-            {
-                name: 'Direct-Bearer',
-                call: async (url, headers) => {
-                    return await fetch(url, {
-                        method: 'GET',
-                        headers: headers,
-                        mode: 'cors'
-                    });
-                }
-            },
-            {
-                name: 'CorsProxy-Bearer',
-                call: async (url, headers) => {
-                    return await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, {
-                        method: 'GET',
-                        headers: headers
-                    });
-                }
-            },
-            {
-                name: 'AllOrigins-POST',
-                call: async (url, headers) => {
-                    const response = await fetch('https://api.allorigins.win/get', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            url: url,
-                            requestHeaders: headers
-                        })
-                    });
-                    if (response.ok) {
-                        const result = await response.json();
-                        return {
-                            ok: result.status.http_code === 200,
-                            json: async () => JSON.parse(result.contents)
-                        };
-                    }
-                    throw new Error('AllOrigins POST failed');
-                }
-            }
-        ];
-
-        // API 호출 (Bearer token 방식으로 개선)
-        async function doorayAPI(endpoint, params = {}) {
-            const baseUrl = 'https://api.dooray.com' + endpoint;
-            const queryString = new URLSearchParams(params).toString();
-            const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
-            
-            const headers = {
-                'Authorization': `Bearer ${API_TOKEN}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-            
-            let lastError = null;
-            
-            // 이전에 성공한 방법이 있으면 먼저 시도
-            if (workingCorsMethod) {
-                try {
-                    console.log(`Trying cached method ${workingCorsMethod.name} for ${endpoint}...`);
-                    const response = await workingCorsMethod.call(fullUrl, headers);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log(`✅ ${workingCorsMethod.name} succeeded (cached) for ${endpoint}`);
-                        updateCorsStatus(workingCorsMethod.name, 'success', `API 연결: ${workingCorsMethod.name}`);
-                        return data;
-                    }
-                } catch (error) {
-                    console.log(`❌ Cached method ${workingCorsMethod.name} failed, trying others...`);
-                    workingCorsMethod = null; // Clear cache
-                }
-            }
-            
-            for (const method of CORS_METHODS) {
-                try {
-                    console.log(`Trying ${method.name} for ${endpoint}...`);
-                    updateCorsStatus(method.name, '', `시도 중: ${method.name}...`);
-                    
-                    const response = await method.call(fullUrl, headers);
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log(`✅ ${method.name} succeeded for ${endpoint}`);
-                        
-                        // Cache the working method
-                        workingCorsMethod = method;
-                        updateCorsStatus(method.name, 'success', `API 연결: ${method.name}`);
-                        return data;
-                    } else {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                } catch (error) {
-                    console.log(`❌ ${method.name} failed: ${error.message}`);
-                    lastError = error;
-                    
-                    // Add delay between attempts to avoid rate limiting
-                    if (method !== CORS_METHODS[CORS_METHODS.length - 1]) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-            }
-            
-            updateCorsStatus('', 'error', 'API 연결 실패');
-            throw new Error(`모든 CORS 방법 실패. 마지막 에러: ${lastError?.message || 'Unknown error'}`);
-        }
         
         async function initializeApp() {
             document.getElementById('date-picker').valueAsDate = new Date();
             setupEventListeners();
             
-            // 토큰 확인 - 실패해도 계속 진행
-            try {
-                const meData = await doorayAPI('/common/v1/members/me');
-                myInfo = meData.result || {};
-            } catch (e) {
-                console.log('사용자 정보 조회 실패 - 계속 진행');
-            }
+            // 사용자 정보 가져오기
+            myInfo = await DoorayAPI.getMyInfo();
             
             await loadAllTimelines();
         }
@@ -614,16 +748,7 @@
             main.innerHTML = '<p class="loader">회의실 현황을 불러오는 중...</p>';
             
             try {
-                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
-                const locations = (locRes.result || []).sort((a, b) => {
-                    const nameA = a.name || '';
-                    const nameB = b.name || '';
-                    if (nameA === "판교(글로벌R&D센터)") return -1;
-                    if (nameB === "판교(글로벌R&D센터)") return 1;
-                    if (nameA.includes("판교")) return -1;
-                    if (nameB.includes("판교")) return 1;
-                    return nameA.localeCompare(nameB);
-                });
+                const locations = await DoorayAPI.getLocations();
                 
                 main.innerHTML = '';
                 
@@ -640,11 +765,7 @@
         
         async function fetchAndRenderLocation(location, date, container) {
             try {
-                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
-                    resourceCategoryId: location.id,
-                    size: 200
-                });
-                const rooms = roomsRes.result || [];
+                const rooms = await DoorayAPI.getRooms(location.id);
                 
                 if (rooms.length === 0) {
                     container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
@@ -661,13 +782,7 @@
                 let reservations = [];
                 
                 try {
-                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
-                        resourceIds: roomIds,
-                        timeMin: timeMin,
-                        timeMax: timeMax,
-                        size: 500
-                    });
-                    reservations = resData.result || [];
+                    reservations = await DoorayAPI.getReservations(roomIds, date);
                 } catch (e) {
                     console.log('예약 정보 로드 실패:', e);
                 }
@@ -680,7 +795,7 @@
         }
         
         function renderTimeline(location, rooms, reservations) {
-            const locationColor = getLocationColor(location.name);
+            const locationColor = DoorayAPI.getLocationColor(location.name);
             let html = `<h3>${location.name}</h3>`;
             
             html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
@@ -756,7 +871,7 @@
         function saveToken() {
             const token = document.getElementById('token-input').value.trim();
             if (token) {
-                API_TOKEN = token;
+                DoorayAPI.config.API_TOKEN = token;
                 localStorage.setItem('dooray_token', token);
             }
             document.getElementById('login-modal').classList.remove('active');

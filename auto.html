@@ -669,11 +669,7 @@
         
         async function fetchAndRenderLocation(location, date, container) {
             try {
-                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
-                    resourceCategoryId: location.id,
-                    size: 200
-                });
-                const rooms = roomsRes.result || [];
+                const rooms = await DoorayAPI.getRooms(location.id);
                 
                 if (rooms.length === 0) {
                     container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
@@ -691,13 +687,7 @@
                 let reservations = [];
                 
                 try {
-                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
-                        resourceIds: roomIds,
-                        timeMin: timeMin,
-                        timeMax: timeMax,
-                        size: 500
-                    });
-                    reservations = resData.result || [];
+                    reservations = await DoorayAPI.getReservations(roomIds, date);
                     stats.totalReservations += reservations.length;
                     
                     // 현재 시간 기준 사용중 계산

@@ -613,16 +613,16 @@
         </div>
     </div>
     
+    <script src="dooray-api.js"></script>
     <script>
-        const API_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
         let myInfo = {};
         let allData = {};
         let currentLocation = 'all';
         let refreshTimer = null;
         let lastUpdateTime = null;
         
-        const START_HOUR = 9;
-        const END_HOUR = 19;
+        const START_HOUR = DoorayAPI.config.START_HOUR;
+        const END_HOUR = DoorayAPI.config.END_HOUR;
         const REFRESH_INTERVAL = 60000; // 1분
         
         const locationColors = {
@@ -632,34 +632,6 @@
             '기타': '#f59e0b'
         };
         
-        // CORS 메서드
-        async function doorayAPI(endpoint, params = {}) {
-            const baseUrl = `https://api.dooray.com${endpoint}`;
-            const queryParams = new URLSearchParams({
-                ...params,
-                token: API_TOKEN
-            }).toString();
-            const url = `${baseUrl}?${queryParams}`;
-            
-            const methods = [
-                () => fetch(url, { mode: 'cors' }),
-                () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`),
-                () => fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)
-            ];
-            
-            for (const method of methods) {
-                try {
-                    const response = await method();
-                    if (response.ok) {
-                        return await response.json();
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            throw new Error('API 호출 실패');
-        }
         
         function updateClock() {
             const now = new Date();
@@ -718,8 +690,7 @@
             
             try {
                 // 위치 정보 가져오기
-                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
-                const locations = locRes.result || [];
+                const locations = await DoorayAPI.getLocations();
                 
                 // 통계 초기화
                 let stats = {
@@ -733,11 +704,7 @@
                 
                 // 각 위치별 데이터 로드
                 for (const location of locations) {
-                    const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
-                        resourceCategoryId: location.id,
-                        size: 200
-                    });
-                    const rooms = roomsRes.result || [];
+                    const rooms = await DoorayAPI.getRooms(location.id);
                     
                     if (rooms.length === 0) continue;
                     
@@ -753,13 +720,7 @@
                     let reservations = [];
                     
                     try {
-                        const resData = await doorayAPI('/reservation/v1/resource-reservations', {
-                            resourceIds: roomIds,
-                            timeMin: timeMin,
-                            timeMax: timeMax,
-                            size: 500
-                        });
-                        reservations = resData.result || [];
+                        reservations = await DoorayAPI.getReservations(roomIds, date);
                         stats.reservations += reservations.length;
                     } catch (e) {
                         console.log('예약 정보 로드 실패:', e);

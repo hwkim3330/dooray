@@ -324,27 +324,11 @@
         </div>
     </div>
     
+    <script src="dooray-api.js"></script>
     <script>
-        // 기본 토큰 (필요시 사용)
-        const DEFAULT_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
-        let API_TOKEN = localStorage.getItem('dooray_token') || DEFAULT_TOKEN;
         let myInfo = {};
-        const START_HOUR = 9;
-        const END_HOUR = 19;
-        const locationColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964'];
-        
-        // 작동하는 프록시 캐싱
-        let workingProxy = null;
-        let lastRequestTime = 0;
-        const MIN_REQUEST_INTERVAL = 500; // 최소 요청 간격 (ms)
-        
-        function getLocationColor(locationName) {
-            let hash = 0;
-            for(let i = 0; i < locationName.length; i++) {
-                hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return locationColors[Math.abs(hash % locationColors.length)];
-        }
+        const START_HOUR = DoorayAPI.config.START_HOUR;
+        const END_HOUR = DoorayAPI.config.END_HOUR;
         
         function setupEventListeners() {
             document.getElementById('date-picker').addEventListener('change', loadAllTimelines);
@@ -367,121 +351,13 @@
             loadAllTimelines();
         }
         
-        // API 호출 (안정적인 프록시 사용)
-        async function doorayAPI(endpoint, params = {}) {
-            // Rate limiting
-            const now = Date.now();
-            if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
-                await new Promise(r => setTimeout(r, MIN_REQUEST_INTERVAL - (now - lastRequestTime)));
-            }
-            lastRequestTime = Date.now();
-            
-            const baseUrl = `https://api.dooray.com${endpoint}`;
-            const queryString = new URLSearchParams(params).toString();
-            const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
-            
-            // 캐시된 작동 프록시가 있으면 먼저 시도
-            if (workingProxy) {
-                try {
-                    const result = await workingProxy(url);
-                    if (result) return result;
-                } catch (e) {
-                    console.log('Cached proxy failed, trying others...');
-                    workingProxy = null;
-                }
-            }
-            
-            // 방법 1: 직접 호출 (Authorization 헤더 포함)
-            const directCall = async () => {
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `dooray-api ${API_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    mode: 'cors'
-                });
-                if (response.ok) return await response.json();
-                throw new Error('Direct call failed');
-            };
-            
-            // 방법 2: AllOrigins (헤더 없이, GET 전용)
-            const allOriginsCall = async () => {
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl, {
-                    method: 'GET',
-                    // AllOrigins는 Authorization 헤더를 지원하지 않음
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (response.ok) return await response.json();
-                throw new Error('AllOrigins failed');
-            };
-            
-            // 방법 3: CorsProxy (헤더 포함 가능)
-            const corsProxyCall = async () => {
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl, {
-                    headers: {
-                        'Authorization': `dooray-api ${API_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (response.ok) return await response.json();
-                throw new Error('CorsProxy failed');
-            };
-            
-            // 방법 4: Thingproxy
-            const thingProxyCall = async () => {
-                const proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
-                const response = await fetch(proxyUrl, {
-                    headers: {
-                        'Authorization': `dooray-api ${API_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (response.ok) return await response.json();
-                throw new Error('ThingProxy failed');
-            };
-            
-            // 모든 방법 순차 시도
-            const methods = [
-                { name: 'Direct', func: directCall },
-                { name: 'CorsProxy', func: corsProxyCall },
-                { name: 'AllOrigins', func: allOriginsCall },
-                { name: 'ThingProxy', func: thingProxyCall }
-            ];
-            
-            for (const method of methods) {
-                try {
-                    console.log(`Trying ${method.name}...`);
-                    const result = await method.func();
-                    console.log(`${method.name} succeeded!`);
-                    workingProxy = method.func;
-                    return result;
-                } catch (e) {
-                    console.log(`${method.name} failed:`, e.message);
-                    if (e.message.includes('429')) {
-                        // Rate limit 에러시 더 긴 대기
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
-                }
-            }
-            
-            throw new Error('모든 API 호출 방법 실패');
-        }
         
         async function initializeApp() {
             document.getElementById('date-picker').valueAsDate = new Date();
             setupEventListeners();
             
-            // 토큰 확인 - 실패해도 계속 진행
-            try {
-                const meData = await doorayAPI('/common/v1/members/me');
-                myInfo = meData.result || {};
-            } catch (e) {
-                console.log('사용자 정보 조회 실패 - 계속 진행');
-            }
+            // 사용자 정보 가져오기
+            myInfo = await DoorayAPI.getMyInfo();
             
             await loadAllTimelines();
         }
@@ -492,16 +368,7 @@
             main.innerHTML = '<p class="loader">회의실 현황을 불러오는 중...</p>';
             
             try {
-                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
-                const locations = (locRes.result || []).sort((a, b) => {
-                    const nameA = a.name || '';
-                    const nameB = b.name || '';
-                    if (nameA === "판교(글로벌R&D센터)") return -1;
-                    if (nameB === "판교(글로벌R&D센터)") return 1;
-                    if (nameA.includes("판교")) return -1;
-                    if (nameB.includes("판교")) return 1;
-                    return nameA.localeCompare(nameB);
-                });
+                const locations = await DoorayAPI.getLocations();
                 
                 main.innerHTML = '';
                 
@@ -518,11 +385,7 @@
         
         async function fetchAndRenderLocation(location, date, container) {
             try {
-                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
-                    resourceCategoryId: location.id,
-                    size: 200
-                });
-                const rooms = roomsRes.result || [];
+                const rooms = await DoorayAPI.getRooms(location.id);
                 
                 if (rooms.length === 0) {
                     container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
@@ -539,13 +402,7 @@
                 let reservations = [];
                 
                 try {
-                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
-                        resourceIds: roomIds,
-                        timeMin: timeMin,
-                        timeMax: timeMax,
-                        size: 500
-                    });
-                    reservations = resData.result || [];
+                    reservations = await DoorayAPI.getReservations(roomIds, date);
                 } catch (e) {
                     console.log('예약 정보 로드 실패:', e);
                 }
@@ -558,7 +415,7 @@
         }
         
         function renderTimeline(location, rooms, reservations) {
-            const locationColor = getLocationColor(location.name);
+            const locationColor = DoorayAPI.getLocationColor(location.name);
             let html = `<h3>${location.name}</h3>`;
             
             html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
@@ -634,7 +491,7 @@
         function saveToken() {
             const token = document.getElementById('token-input').value.trim();
             if (token) {
-                API_TOKEN = token;
+                DoorayAPI.config.API_TOKEN = token;
                 localStorage.setItem('dooray_token', token);
             }
             document.getElementById('login-modal').classList.remove('active');

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>KETI 회의실</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 헤더 */
+        .header {
+            background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .title {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #81d4fa;
+        }
+        
+        .refresh-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .datetime {
+            text-align: right;
+        }
+        
+        .date {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .time {
+            font-size: 20px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* 메인 컨텐츠 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        /* 섹션 */
+        .location-section {
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 12px 20px;
+            border-bottom: 2px solid #1565c0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1565c0;
+        }
+        
+        .update-time {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 타임라인 */
+        .timeline-wrapper {
+            overflow-x: auto;
+            padding: 8px;
+        }
+        
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+        
+        .timeline-table thead {
+            background: #f8f9fa;
+        }
+        
+        .timeline-table th {
+            padding: 8px 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        
+        .timeline-table th.room-header {
+            width: 90px;
+            min-width: 90px;
+            text-align: left;
+            padding-left: 12px;
+            background: #f0f4f8;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        
+        .timeline-table tbody tr {
+            transition: background 0.2s;
+        }
+        
+        .timeline-table tbody tr:hover {
+            background: #f8fafb;
+        }
+        
+        .timeline-table td {
+            height: 36px;
+            border: 1px solid #dee2e6;
+            padding: 0;
+            position: relative;
+            background: white;
+        }
+        
+        .timeline-table td.room-name {
+            width: 90px;
+            min-width: 90px;
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: white;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            border-right: 2px solid #dee2e6;
+        }
+        
+        .timeline-table td.time-slot {
+            width: 60px;
+            min-width: 60px;
+        }
+        
+        .timeline-table td.hour-start {
+            border-left: 1px solid #999;
+        }
+        
+        /* 예약 블록 */
+        .booking {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            background: linear-gradient(135deg, #42a5f5, #1e88e5);
+            border-radius: 4px;
+            padding: 0 6px;
+            color: white;
+            display: flex;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            cursor: default;
+            z-index: 2;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .booking:hover {
+            background: linear-gradient(135deg, #1e88e5, #1565c0);
+            z-index: 3;
+        }
+        
+        .booking-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .booking-user {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+        
+        /* 로딩 */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px;
+            color: #666;
+        }
+        
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #1565c0;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 에러 */
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #d32f2f;
+            font-size: 16px;
+        }
+        
+        /* 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">KETI 회의실</div>
+        <div class="header-right">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label">글로벌R&D 사용가능</span>
+                    <span class="stat-value" id="globalAvailable">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">GBC 사용가능</span>
+                    <span class="stat-value" id="gbcAvailable">0</span>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="app.loadData()">새로고침</button>
+            <div class="datetime">
+                <div class="date" id="date">1월 8일 월요일</div>
+                <div class="time" id="time">00:00</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="content" id="content">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>회의실 정보를 불러오는 중...</div>
+        </div>
+    </div>
+
+    <script>
+        const API = {
+            TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+            START_HOUR: 9,
+            END_HOUR: 19,
+            
+            async fetch(endpoint, params = {}) {
+                const baseUrl = 'https://api.dooray.com' + endpoint;
+                const queryString = new URLSearchParams(params).toString();
+                const url = baseUrl + (queryString ? '?' + queryString : '');
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${this.TOKEN}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            }
+        };
+        
+        class HorizontalApp {
+            constructor() {
+                this.locations = [];
+                this.rooms = {};
+                this.reservations = {};
+                this.init();
+            }
+            
+            init() {
+                this.updateDateTime();
+                this.loadData();
+                setInterval(() => this.loadData(true), 5 * 60 * 1000);
+            }
+            
+            updateDateTime() {
+                const update = () => {
+                    const now = new Date();
+                    document.getElementById('date').textContent = 
+                        now.toLocaleDateString('ko-KR', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            weekday: 'long'
+                        });
+                    document.getElementById('time').textContent = 
+                        now.toLocaleTimeString('ko-KR', { 
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                };
+                update();
+                setInterval(update, 1000);
+            }
+            
+            async loadData(silent = false) {
+                if (!silent) {
+                    document.getElementById('content').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>회의실 정보를 불러오는 중...</div>
+                        </div>
+                    `;
+                }
+                
+                try {
+                    const locData = await API.fetch('/reservation/v1/resource-categories', { size: 20 });
+                    this.locations = (locData.result || []).filter(loc => 
+                        loc.name && (loc.name.includes('판교(글로벌R&D센터)') || loc.name.includes('판교(GBC)'))
+                    ).sort((a, b) => {
+                        if (a.name.includes('글로벌R&D센터')) return -1;
+                        if (b.name.includes('글로벌R&D센터')) return 1;
+                        return 0;
+                    });
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    for (const location of this.locations) {
+                        const roomData = await API.fetch('/reservation/v1/reservable-resources', {
+                            resourceCategoryId: location.id,
+                            size: 200
+                        });
+                        this.rooms[location.id] = roomData.result || [];
+                        
+                        if (this.rooms[location.id].length > 0) {
+                            const roomIds = this.rooms[location.id].map(r => r.id).join(',');
+                            const timeMin = `${today}T00:00:00+09:00`;
+                            const timeMax = `${today}T23:59:59+09:00`;
+                            
+                            const resData = await API.fetch('/reservation/v1/resource-reservations', {
+                                resourceIds: roomIds,
+                                timeMin: timeMin,
+                                timeMax: timeMax,
+                                size: 500
+                            });
+                            this.reservations[location.id] = resData.result || [];
+                        }
+                    }
+                    
+                    this.updateStats();
+                    this.render();
+                    
+                } catch (error) {
+                    document.getElementById('content').innerHTML = `
+                        <div class="error">데이터를 불러올 수 없습니다</div>
+                    `;
+                }
+            }
+            
+            updateStats() {
+                let globalAvailable = 0;
+                let gbcAvailable = 0;
+                const now = new Date();
+                
+                this.locations.forEach(location => {
+                    const rooms = this.rooms[location.id] || [];
+                    const reservations = this.reservations[location.id] || [];
+                    const isGlobal = location.name.includes('글로벌R&D센터');
+                    
+                    rooms.forEach(room => {
+                        const roomReservations = reservations.filter(r => r.resource?.id === room.id);
+                        const isOccupied = roomReservations.some(res => {
+                            const start = new Date(res.startedAt);
+                            const end = new Date(res.endedAt);
+                            return now >= start && now <= end;
+                        });
+                        
+                        if (!isOccupied) {
+                            if (isGlobal) globalAvailable++;
+                            else gbcAvailable++;
+                        }
+                    });
+                });
+                
+                document.getElementById('globalAvailable').textContent = globalAvailable;
+                document.getElementById('gbcAvailable').textContent = gbcAvailable;
+            }
+            
+            render() {
+                let html = '';
+                
+                this.locations.forEach(location => {
+                    const rooms = this.rooms[location.id] || [];
+                    const reservations = this.reservations[location.id] || [];
+                    
+                    if (rooms.length === 0) return;
+                    
+                    const displayName = location.name.includes('글로벌R&D') ? '글로벌R&D센터' : 'GBC';
+                    const updateTime = new Date().toLocaleTimeString('ko-KR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    html += `
+                        <div class="location-section">
+                            <div class="section-header">
+                                <div class="section-title">${displayName}</div>
+                                <div class="update-time">업데이트: ${updateTime}</div>
+                            </div>
+                            <div class="timeline-wrapper">
+                                ${this.renderTimeline(rooms, reservations)}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('content').innerHTML = html;
+            }
+            
+            renderTimeline(rooms, reservations) {
+                const SLOTS = (API.END_HOUR - API.START_HOUR) * 2;
+                
+                let html = '<table class="timeline-table"><thead><tr>';
+                html += '<th class="room-header">회의실</th>';
+                
+                for (let hour = API.START_HOUR; hour < API.END_HOUR; hour++) {
+                    html += `<th colspan="2">${hour}:00</th>`;
+                }
+                html += '</tr></thead><tbody>';
+                
+                const resByRoom = {};
+                reservations.forEach(res => {
+                    const roomId = res.resource?.id;
+                    if (roomId) {
+                        if (!resByRoom[roomId]) resByRoom[roomId] = [];
+                        resByRoom[roomId].push(res);
+                    }
+                });
+                
+                rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                    html += `<tr>`;
+                    html += `<td class="room-name" title="${room.name}">${room.name}</td>`;
+                    
+                    const slots = Array(SLOTS).fill(null);
+                    
+                    (resByRoom[room.id] || []).forEach(res => {
+                        const start = new Date(res.startedAt);
+                        const end = new Date(res.endedAt);
+                        
+                        const startSlot = Math.max(0, 
+                            (start.getHours() - API.START_HOUR) * 2 + 
+                            Math.floor(start.getMinutes() / 30)
+                        );
+                        const endSlot = Math.min(SLOTS, 
+                            (end.getHours() - API.START_HOUR) * 2 + 
+                            Math.ceil(end.getMinutes() / 30)
+                        );
+                        
+                        if (startSlot < SLOTS && endSlot > startSlot) {
+                            slots[startSlot] = {
+                                colspan: endSlot - startSlot,
+                                subject: res.subject || '예약',
+                                user: res.users?.from?.member?.name || ''
+                            };
+                            
+                            for (let i = startSlot + 1; i < endSlot; i++) {
+                                slots[i] = 'skip';
+                            }
+                        }
+                    });
+                    
+                    for (let i = 0; i < SLOTS; i++) {
+                        const isHourStart = i % 2 === 0;
+                        
+                        if (slots[i] === null) {
+                            html += `<td class="time-slot ${isHourStart ? 'hour-start' : ''}"></td>`;
+                        } else if (slots[i] !== 'skip') {
+                            const slot = slots[i];
+                            html += `<td colspan="${slot.colspan}" class="time-slot ${isHourStart ? 'hour-start' : ''}">
+                                <div class="booking">
+                                    <span class="booking-title">${slot.subject}</span>
+                                    ${slot.user ? `<span class="booking-user">(${slot.user})</span>` : ''}
+                                </div>
+                            </td>`;
+                            i += slot.colspan - 1;
+                        }
+                    }
+                    
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table>';
+                return html;
+            }
+        }
+        
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new HorizontalApp();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KETI 회의실</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #004b8d 0%, #0066cc 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .datetime {
+            text-align: right;
+        }
+        
+        .date {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .time {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #004b8d;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e6f2ff;
+        }
+        
+        .timeline-wrapper {
+            overflow-x: auto;
+        }
+        
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        .timeline-table thead {
+            background: #f8f9fa;
+        }
+        
+        .timeline-table th {
+            padding: 8px 2px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        
+        .timeline-table th.room-cell {
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            position: sticky;
+            left: 0;
+            background: #f8f9fa;
+            z-index: 10;
+            text-align: left;
+            padding-left: 10px;
+            font-size: 12px;
+        }
+        
+        .timeline-table th.time-cell {
+            width: 40px;
+            min-width: 40px;
+        }
+        
+        .timeline-table tbody tr {
+            transition: background 0.2s;
+        }
+        
+        .timeline-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .timeline-table td {
+            height: 36px;
+            border: 1px solid #dee2e6;
+            padding: 0;
+            position: relative;
+        }
+        
+        .timeline-table td.room-cell {
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 5;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .timeline-table td.time-cell {
+            width: 40px;
+            min-width: 40px;
+        }
+        
+        .booked {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            background: #4a90e2;
+            border-radius: 3px;
+            padding: 2px 4px;
+            color: white;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: default;
+        }
+        
+        .booked:hover {
+            background: #3b7dd8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #ddd;
+            border-top-color: #004b8d;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">KETI 회의실 현황</div>
+        <div class="datetime">
+            <div class="date" id="date"></div>
+            <div class="time" id="time"></div>
+        </div>
+    </div>
+    
+    <div id="content">
+        <div class="loading">
+            <div class="spinner"></div>
+            회의실 정보를 불러오는 중...
+        </div>
+    </div>
+
+    <script>
+        const API = {
+            TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+            
+            async fetch(endpoint, params = {}) {
+                const baseUrl = 'https://api.dooray.com' + endpoint;
+                const queryString = new URLSearchParams(params).toString();
+                const url = baseUrl + (queryString ? '?' + queryString : '');
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${this.TOKEN}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            }
+        };
+        
+        class MinimalApp {
+            constructor() {
+                this.locations = [];
+                this.rooms = {};
+                this.reservations = {};
+                this.init();
+            }
+            
+            init() {
+                this.updateDateTime();
+                this.loadData();
+                setInterval(() => this.loadData(true), 5 * 60 * 1000);
+            }
+            
+            updateDateTime() {
+                const update = () => {
+                    const now = new Date();
+                    document.getElementById('date').textContent = 
+                        now.toLocaleDateString('ko-KR', {
+                            month: 'long',
+                            day: 'numeric',
+                            weekday: 'long'
+                        });
+                    document.getElementById('time').textContent = 
+                        now.toLocaleTimeString('ko-KR', { hour12: false });
+                };
+                update();
+                setInterval(update, 1000);
+            }
+            
+            async loadData(silent = false) {
+                if (!silent) {
+                    document.getElementById('content').innerHTML = `
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            회의실 정보를 불러오는 중...
+                        </div>
+                    `;
+                }
+                
+                try {
+                    // 위치 가져오기
+                    const locData = await API.fetch('/reservation/v1/resource-categories', { size: 20 });
+                    this.locations = (locData.result || []).filter(loc => 
+                        loc.name && (loc.name.includes('판교(글로벌R&D센터)') || loc.name.includes('판교(GBC)'))
+                    );
+                    
+                    // 글로벌 R&D를 먼저 정렬
+                    this.locations.sort((a, b) => {
+                        if (a.name.includes('글로벌R&D센터')) return -1;
+                        if (b.name.includes('글로벌R&D센터')) return 1;
+                        return 0;
+                    });
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    // 각 위치의 회의실과 예약 로드
+                    for (const location of this.locations) {
+                        const roomData = await API.fetch('/reservation/v1/reservable-resources', {
+                            resourceCategoryId: location.id,
+                            size: 200
+                        });
+                        this.rooms[location.id] = roomData.result || [];
+                        
+                        if (this.rooms[location.id].length > 0) {
+                            const roomIds = this.rooms[location.id].map(r => r.id).join(',');
+                            const timeMin = `${today}T00:00:00+09:00`;
+                            const timeMax = `${today}T23:59:59+09:00`;
+                            
+                            const resData = await API.fetch('/reservation/v1/resource-reservations', {
+                                resourceIds: roomIds,
+                                timeMin: timeMin,
+                                timeMax: timeMax,
+                                size: 500
+                            });
+                            this.reservations[location.id] = resData.result || [];
+                        }
+                    }
+                    
+                    this.render();
+                    
+                } catch (error) {
+                    document.getElementById('content').innerHTML = `
+                        <div class="error">데이터를 불러올 수 없습니다</div>
+                    `;
+                }
+            }
+            
+            render() {
+                let html = '';
+                
+                this.locations.forEach(location => {
+                    const rooms = this.rooms[location.id] || [];
+                    const reservations = this.reservations[location.id] || [];
+                    
+                    if (rooms.length === 0) return;
+                    
+                    const displayName = location.name.replace('판교(', '').replace(')', '');
+                    
+                    html += `
+                        <div class="section">
+                            <div class="section-title">${displayName}</div>
+                            ${this.renderTimeline(rooms, reservations)}
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('content').innerHTML = html;
+            }
+            
+            renderTimeline(rooms, reservations) {
+                const START_HOUR = 9;
+                const END_HOUR = 19;
+                const SLOTS = (END_HOUR - START_HOUR) * 2; // 30분 단위
+                
+                let html = '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr>';
+                html += '<th class="room-cell">회의실</th>';
+                
+                // 30분 단위 시간 헤더
+                for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+                    html += `<th class="time-cell">${hour}:00</th>`;
+                    html += `<th class="time-cell">:30</th>`;
+                }
+                html += '</tr></thead><tbody>';
+                
+                // 예약 정보 정리
+                const resByRoom = {};
+                reservations.forEach(res => {
+                    const roomId = res.resource?.id;
+                    if (roomId) {
+                        if (!resByRoom[roomId]) resByRoom[roomId] = [];
+                        resByRoom[roomId].push(res);
+                    }
+                });
+                
+                // 각 회의실 행
+                rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                    html += `<tr>`;
+                    html += `<td class="room-cell" title="${room.name}">${room.name}</td>`;
+                    
+                    // 시간 슬롯
+                    const slots = Array(SLOTS).fill(null);
+                    
+                    // 예약 매핑
+                    (resByRoom[room.id] || []).forEach(res => {
+                        const start = new Date(res.startedAt);
+                        const end = new Date(res.endedAt);
+                        
+                        const startSlot = Math.max(0, 
+                            (start.getHours() - START_HOUR) * 2 + 
+                            Math.floor(start.getMinutes() / 30)
+                        );
+                        const endSlot = Math.min(SLOTS, 
+                            (end.getHours() - START_HOUR) * 2 + 
+                            Math.ceil(end.getMinutes() / 30)
+                        );
+                        
+                        if (startSlot < SLOTS && endSlot > startSlot) {
+                            for (let i = startSlot; i < endSlot && i < SLOTS; i++) {
+                                if (i === startSlot) {
+                                    slots[i] = {
+                                        colspan: endSlot - startSlot,
+                                        subject: res.subject || '예약'
+                                    };
+                                } else {
+                                    slots[i] = 'skip';
+                                }
+                            }
+                        }
+                    });
+                    
+                    // 슬롯 렌더링
+                    for (let i = 0; i < SLOTS; i++) {
+                        if (slots[i] === null) {
+                            html += '<td class="time-cell"></td>';
+                        } else if (slots[i] !== 'skip') {
+                            html += `<td class="time-cell" colspan="${slots[i].colspan}">
+                                <div class="booked">${slots[i].subject}</div>
+                            </td>`;
+                            i += slots[i].colspan - 1;
+                        }
+                    }
+                    
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table></div>';
+                return html;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new MinimalApp();
+        });
+    </script>
+</body>
+</html>

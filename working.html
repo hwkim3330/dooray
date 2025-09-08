@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>KETI 회의실 현황</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 1600px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+        
+        .header-clock {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #007aff;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            color: #333;
+        }
+        
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .date-controls button, #date-picker {
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .date-controls button:hover {
+            background-color: #f0f0f0;
+        }
+        
+        main {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .location-group {
+            margin-bottom: 2rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+        
+        .location-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0.5rem;
+            color: #007aff;
+        }
+        
+        .timeline-wrapper {
+            overflow-x: auto;
+        }
+        
+        .timeline-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 900px;
+            table-layout: fixed;
+        }
+        
+        .timeline-table th, .timeline-table td {
+            border: 1px solid #e0e0e0;
+            padding: 0;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .timeline-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #f8f9fa;
+            padding: 0.75em 0;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .timeline-table .room-name-cell {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+            padding: 1em 0.8em;
+            font-weight: 500;
+            width: 180px;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .timeline-table thead .room-name-cell {
+            z-index: 4;
+            background: #f8f9fa;
+        }
+        
+        .time-slot {
+            height: 45px;
+        }
+        
+        .booked {
+            color: white;
+            padding: 0.4em 0.6em;
+            text-align: left;
+            border-radius: 6px;
+            margin: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 4px);
+            width: calc(100% - 4px);
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .booked:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .booked-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+        }
+        
+        .booked-subject {
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .booked-user {
+            font-size: 11px;
+            opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .loader {
+            padding: 5em;
+            text-align: center;
+            font-size: 1.2em;
+            color: #666;
+        }
+        
+        .error-note {
+            text-align: center;
+            padding: 1rem;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            border-radius: 8px;
+        }
+        
+        .proxy-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            display: none;
+        }
+        
+        .proxy-status.show {
+            display: block;
+        }
+        
+        .proxy-status.success {
+            border-left: 4px solid #34c759;
+            color: #34c759;
+        }
+        
+        .proxy-status.error {
+            border-left: 4px solid #ff3b30;
+            color: #ff3b30;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                position: static;
+            }
+            .header-clock {
+                position: static;
+                transform: none;
+                order: -1;
+                align-self: center;
+                margin-bottom: 0.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .date-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            #date-picker {
+                flex-grow: 1;
+                text-align: center;
+            }
+            main {
+                padding: 0.5rem;
+                border-radius: 12px;
+            }
+            h3 {
+                font-size: 1.1rem;
+            }
+            .room-name-cell {
+                width: 140px;
+                font-size: 12px;
+            }
+            .timeline-table .room-name-cell {
+                position: static;
+                z-index: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>KETI 회의실 현황</h1>
+            <div class="header-clock" id="header-clock">00:00:00</div>
+            <div class="date-controls">
+                <button id="prev-day" title="이전 날짜"><</button>
+                <input type="date" id="date-picker">
+                <button id="next-day" title="다음 날짜">></button>
+                <button id="today-btn">오늘</button>
+            </div>
+        </header>
+        <main id="main-content"></main>
+    </div>
+    
+    <div class="proxy-status" id="proxy-status"></div>
+    
+    <script>
+        // 기본 토큰
+        const API_TOKEN = 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA';
+        let myInfo = {};
+        const START_HOUR = 9;
+        const END_HOUR = 19;
+        const locationColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964'];
+        
+        // 작동 확인된 프록시 방식
+        let workingMethod = null;
+        
+        function getLocationColor(locationName) {
+            let hash = 0;
+            for(let i = 0; i < locationName.length; i++) {
+                hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return locationColors[Math.abs(hash % locationColors.length)];
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('date-picker').addEventListener('change', loadAllTimelines);
+            document.getElementById('prev-day').addEventListener('click', () => changeDate(-1));
+            document.getElementById('next-day').addEventListener('click', () => changeDate(1));
+            document.getElementById('today-btn').addEventListener('click', () => {
+                const dp = document.getElementById('date-picker');
+                if(dp.valueAsDate.toDateString() !== new Date().toDateString()) {
+                    dp.valueAsDate = new Date();
+                    loadAllTimelines();
+                }
+            });
+        }
+        
+        function changeDate(offset) {
+            const dp = document.getElementById('date-picker');
+            const cd = dp.valueAsDate;
+            cd.setDate(cd.getDate() + offset);
+            dp.valueAsDate = cd;
+            loadAllTimelines();
+        }
+        
+        function showProxyStatus(message, type) {
+            const status = document.getElementById('proxy-status');
+            status.textContent = message;
+            status.className = `proxy-status show ${type}`;
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+        
+        // API 호출 - 여러 방법 시도
+        async function doorayAPI(endpoint, params = {}) {
+            const baseUrl = `https://api.dooray.com${endpoint}`;
+            const queryString = new URLSearchParams(params).toString();
+            const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
+            
+            // 캐시된 작동 방법이 있으면 먼저 시도
+            if (workingMethod) {
+                try {
+                    const result = await workingMethod(url);
+                    if (result) return result;
+                } catch (e) {
+                    console.log('Cached method failed, trying others...');
+                    workingMethod = null;
+                }
+            }
+            
+            // 방법 1: 직접 호출 (헤더 포함)
+            const directCall = async (url) => {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `dooray-api ${API_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                if (response.ok) {
+                    showProxyStatus('✓ 직접 연결', 'success');
+                    return await response.json();
+                }
+                throw new Error('Direct call failed');
+            };
+            
+            // 방법 2: AllOrigins GET (헤더 없이)
+            const allOriginsGet = async (url) => {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status.http_code === 200) {
+                        showProxyStatus('✓ AllOrigins 연결', 'success');
+                        return JSON.parse(data.contents);
+                    }
+                }
+                throw new Error('AllOrigins failed');
+            };
+            
+            // 방법 3: CorsProxy
+            const corsProxy = async (url) => {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${API_TOKEN}`
+                    }
+                });
+                if (response.ok) {
+                    showProxyStatus('✓ CorsProxy 연결', 'success');
+                    return await response.json();
+                }
+                throw new Error('CorsProxy failed');
+            };
+            
+            // 방법 4: Thingproxy
+            const thingProxy = async (url) => {
+                const proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${API_TOKEN}`
+                    }
+                });
+                if (response.ok) {
+                    showProxyStatus('✓ ThingProxy 연결', 'success');
+                    return await response.json();
+                }
+                throw new Error('ThingProxy failed');
+            };
+            
+            // 방법 5: Proxy.hoppscotch
+            const hoppscotchProxy = async (url) => {
+                const proxyUrl = `https://proxy.hoppscotch.io/${url}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${API_TOKEN}`,
+                        'x-proxy-key': 'hoppscotch'
+                    }
+                });
+                if (response.ok) {
+                    showProxyStatus('✓ Hoppscotch 연결', 'success');
+                    return await response.json();
+                }
+                throw new Error('Hoppscotch failed');
+            };
+            
+            // 모든 방법 순차 시도
+            const methods = [
+                directCall,
+                allOriginsGet,
+                corsProxy,
+                thingProxy,
+                hoppscotchProxy
+            ];
+            
+            for (const method of methods) {
+                try {
+                    const result = await method(url);
+                    if (result) {
+                        workingMethod = method; // 성공한 방법 저장
+                        return result;
+                    }
+                } catch (e) {
+                    console.log(`Method failed: ${e.message}`);
+                    // 짧은 대기 (rate limiting 방지)
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            
+            showProxyStatus('✗ 연결 실패', 'error');
+            throw new Error('모든 API 호출 방법 실패');
+        }
+        
+        async function initializeApp() {
+            document.getElementById('date-picker').valueAsDate = new Date();
+            setupEventListeners();
+            
+            // 토큰 확인 - 실패해도 계속 진행
+            try {
+                const meData = await doorayAPI('/common/v1/members/me');
+                myInfo = meData.result || {};
+                console.log('사용자 정보 로드 성공');
+            } catch (e) {
+                console.log('사용자 정보 조회 실패 - 계속 진행');
+            }
+            
+            await loadAllTimelines();
+        }
+        
+        async function loadAllTimelines() {
+            const date = document.getElementById('date-picker').value;
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<p class="loader">회의실 현황을 불러오는 중...</p>';
+            
+            try {
+                const locRes = await doorayAPI('/reservation/v1/resource-categories', { size: 20 });
+                const locations = (locRes.result || []).sort((a, b) => {
+                    const nameA = a.name || '';
+                    const nameB = b.name || '';
+                    if (nameA === "판교(글로벌R&D센터)") return -1;
+                    if (nameB === "판교(글로벌R&D센터)") return 1;
+                    if (nameA.includes("판교")) return -1;
+                    if (nameB.includes("판교")) return 1;
+                    return nameA.localeCompare(nameB);
+                });
+                
+                main.innerHTML = '';
+                
+                for (const location of locations) {
+                    const groupContainer = document.createElement('div');
+                    groupContainer.className = 'location-group';
+                    main.appendChild(groupContainer);
+                    await fetchAndRenderLocation(location, date, groupContainer);
+                }
+            } catch (error) {
+                main.innerHTML = `<p class="loader" style="color:red;">데이터 로드 실패: ${error.message}<br>
+                    <small>브라우저 CORS 확장 프로그램을 설치하거나 SETUP_GUIDE.md를 참고하세요</small></p>`;
+            }
+        }
+        
+        async function fetchAndRenderLocation(location, date, container) {
+            try {
+                const roomsRes = await doorayAPI('/reservation/v1/reservable-resources', {
+                    resourceCategoryId: location.id,
+                    size: 200
+                });
+                const rooms = roomsRes.result || [];
+                
+                if (rooms.length === 0) {
+                    container.innerHTML = `<h3>${location.name}</h3><div class="error-note">조회 가능한 회의실이 없습니다.</div>`;
+                    return;
+                }
+                
+                // 예약 정보 가져오기
+                const timeMin = `${date}T00:00:00+09:00`;
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+                
+                const roomIds = rooms.map(r => r.id).join(',');
+                let reservations = [];
+                
+                try {
+                    const resData = await doorayAPI('/reservation/v1/resource-reservations', {
+                        resourceIds: roomIds,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        size: 500
+                    });
+                    reservations = resData.result || [];
+                } catch (e) {
+                    console.log('예약 정보 로드 실패:', e);
+                }
+                
+                container.innerHTML = renderTimeline(location, rooms, reservations);
+                
+            } catch (e) {
+                container.innerHTML = `<div class="error-note"><strong>${location.name}</strong> 데이터 로딩 실패: ${e.message}</div>`;
+            }
+        }
+        
+        function renderTimeline(location, rooms, reservations) {
+            const locationColor = getLocationColor(location.name);
+            let html = `<h3>${location.name}</h3>`;
+            
+            html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
+            
+            for (let i = START_HOUR; i < END_HOUR; i++) {
+                html += `<th colspan="2">${String(i).padStart(2,'0')}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            const resByRoom = (reservations || []).reduce((acc, r) => {
+                const roomId = r.resource?.id;
+                if (roomId) {
+                    acc[roomId] = acc[roomId] || [];
+                    acc[roomId].push(r);
+                }
+                return acc;
+            }, {});
+            
+            rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                html += `<tr><td class="room-name-cell" title="${room.name}">${room.name}</td>`;
+                const totalSlots = (END_HOUR - START_HOUR) * 2;
+                const slots = Array(totalSlots).fill(null);
+                
+                (resByRoom[room.id] || []).forEach(res => {
+                    const start = new Date(res.startedAt);
+                    const end = new Date(res.endedAt);
+                    const startSlot = Math.max(0, (start.getHours() - START_HOUR) * 2 + Math.floor(start.getMinutes() / 30));
+                    const endSlot = Math.min(totalSlots, (end.getHours() - START_HOUR) * 2 + Math.ceil(end.getMinutes() / 30));
+                    const colspan = endSlot - startSlot;
+                    
+                    if (colspan > 0 && startSlot < totalSlots) {
+                        const user = res.users?.from?.member;
+                        const isMy = myInfo.id && user && user.organizationMemberId === myInfo.id;
+                        const userName = user ? user.name : '정보 없음';
+                        
+                        slots[startSlot] = {
+                            colspan,
+                            subject: res.subject || '제목 없음',
+                            userName,
+                            isMyBooking: isMy
+                        };
+                        
+                        for (let i = 1; i < colspan && startSlot + i < totalSlots; i++) {
+                            slots[startSlot + i] = 'skip';
+                        }
+                    }
+                });
+                
+                slots.forEach(s => {
+                    if (s === null) {
+                        html += '<td class="time-slot"></td>';
+                    } else if (s !== 'skip') {
+                        const bgColor = s.isMyBooking ? '#00d4aa' : locationColor;
+                        html += `<td colspan="${s.colspan}">
+                            <div class="booked" style="background-color: ${bgColor};">
+                                <div class="booked-content">
+                                    <div class="booked-subject">${s.subject}</div>
+                                    <span class="booked-user">${s.userName}</span>
+                                </div>
+                            </div>
+                        </td>`;
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+        
+        // 시계 업데이트 함수
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { hour12: false });
+            document.getElementById('header-clock').textContent = timeString;
+        }
+        
+        window.onload = function() {
+            // 시계 시작
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // 앱 초기화
+            initializeApp();
+        };
+    </script>
+</body>
+</html>

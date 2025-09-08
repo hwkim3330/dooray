@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>KETI 회의실 현황 관리 시스템</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #007aff;
+            --success-color: #34c759;
+            --warning-color: #ff9500;
+            --danger-color: #ff3b30;
+            --my-booking-color: #00d4aa;
+            --bg-primary: #f5f5f5;
+            --bg-secondary: white;
+            --border-color: #e0e0e0;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 1rem;
+        }
+        
+        .app-container {
+            width: 100%;
+            max-width: 1600px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), #5856d6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-clock {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .clock-time {
+            font-size: 1.8rem;
+        }
+        
+        .clock-date {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+        
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: #f0f0f0;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #date-picker {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        
+        #date-picker:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .controls-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            opacity: 0.5;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .filter-btn:hover {
+            border-color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.05);
+        }
+        
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        main {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+        }
+        
+        .location-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+        
+        .location-tab {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            color: var(--text-secondary);
+        }
+        
+        .location-tab:hover {
+            background: rgba(0, 122, 255, 0.05);
+        }
+        
+        .location-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .location-group {
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+        
+        .location-group.active {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .location-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .location-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .location-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .timeline-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        
+        .timeline-table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 900px;
+            table-layout: fixed;
+        }
+        
+        .timeline-table th,
+        .timeline-table td {
+            border: 1px solid var(--border-color);
+            padding: 0;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .timeline-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+            padding: 0.75em 0;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .room-name-cell {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: var(--bg-secondary);
+            padding: 1em 1em;
+            font-weight: 500;
+            width: 180px;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-right: 2px solid var(--border-color);
+        }
+        
+        .timeline-table thead .room-name-cell {
+            z-index: 4;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+        }
+        
+        .room-row:hover {
+            background: rgba(0, 122, 255, 0.02);
+        }
+        
+        .time-slot {
+            height: 50px;
+            position: relative;
+            transition: var(--transition);
+        }
+        
+        .time-slot:hover {
+            background: rgba(0, 122, 255, 0.05);
+        }
+        
+        .current-time-indicator {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--danger-color);
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .current-time-indicator::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            width: 8px;
+            height: 8px;
+            background: var(--danger-color);
+            border-radius: 50%;
+        }
+        
+        .booked {
+            color: white;
+            padding: 0.4em 0.6em;
+            text-align: left;
+            border-radius: 8px;
+            margin: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 6px);
+            width: calc(100% - 6px);
+            box-sizing: border-box;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .booked::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        
+        .booked:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+            z-index: 10;
+        }
+        
+        .booked-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        .booked-subject {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .booked-user {
+            font-size: 11px;
+            opacity: 0.9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .booked-time {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        .loader {
+            padding: 4em;
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%);
+            color: white;
+            border-radius: 12px;
+            margin: 1rem 0;
+        }
+        
+        .error-message h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .error-message p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            opacity: 0.3;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+        }
+        
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        
+        .tooltip-info {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideUp 0.3s ease;
+            z-index: 1000;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .notification-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .notification.success {
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .notification.error {
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .notification.info {
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .notification-message {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .notification-close {
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        
+        .notification-close:hover {
+            opacity: 1;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+            }
+            
+            .header-left {
+                margin-bottom: 1rem;
+            }
+            
+            .header-clock {
+                position: static;
+                transform: none;
+                margin: 1rem 0;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .date-controls {
+                justify-content: space-between;
+            }
+            
+            .controls-section {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
+            .filter-buttons {
+                width: 100%;
+                overflow-x: auto;
+            }
+            
+            .location-tabs {
+                padding: 0.5rem;
+            }
+            
+            .room-name-cell {
+                width: 120px;
+                font-size: 11px;
+            }
+            
+            .legend {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #2a2a2a;
+                --text-primary: #ffffff;
+                --text-secondary: #aaaaaa;
+                --border-color: #3a3a3a;
+            }
+            
+            body {
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            }
+            
+            header,
+            main,
+            .controls-section {
+                background: rgba(42, 42, 42, 0.95);
+            }
+            
+            .search-input,
+            #date-picker {
+                background: #1a1a1a;
+                color: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-left">
+                <div class="logo">K</div>
+                <h1>KETI 회의실 예약 시스템</h1>
+            </div>
+            <div class="header-clock" id="header-clock">
+                <div class="clock-time">00:00:00</div>
+                <div class="clock-date">2024년 1월 1일</div>
+            </div>
+            <div class="date-controls">
+                <button class="btn btn-secondary btn-icon" id="prev-day" title="이전 날짜">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <input type="date" id="date-picker">
+                <button class="btn btn-secondary btn-icon" id="next-day" title="다음 날짜">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+                <button class="btn" id="today-btn">오늘</button>
+                <button class="btn btn-secondary" id="refresh-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.3rem;">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    새로고침
+                </button>
+            </div>
+        </header>
+        
+        <div class="controls-section">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="search-input" id="search-input" placeholder="회의실 이름 또는 예약자 검색...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">전체</button>
+                <button class="filter-btn" data-filter="available">예약 가능</button>
+                <button class="filter-btn" data-filter="my-bookings">내 예약</button>
+            </div>
+        </div>
+        
+        <main>
+            <div class="location-tabs" id="location-tabs"></div>
+            <div id="main-content"></div>
+        </main>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <span>일반 예약</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00d4aa;"></div>
+                <span>내 예약</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff3b30;"></div>
+                <span>현재 시간</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // App Configuration
+        const CONFIG = {
+            API_TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+            START_HOUR: 9,
+            END_HOUR: 19,
+            CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+            AUTO_REFRESH: 60 * 1000, // 1 minute
+            LOCATION_COLORS: ['#667eea', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964']
+        };
+        
+        // App State
+        const state = {
+            currentDate: new Date(),
+            locations: [],
+            rooms: {},
+            reservations: {},
+            myInfo: {},
+            selectedLocation: null,
+            filter: 'all',
+            searchQuery: '',
+            cache: new Map(),
+            workingProxyMethod: null
+        };
+        
+        // Cache Manager
+        class CacheManager {
+            constructor(duration = CONFIG.CACHE_DURATION) {
+                this.cache = new Map();
+                this.duration = duration;
+            }
+            
+            get(key) {
+                const item = this.cache.get(key);
+                if (!item) return null;
+                
+                if (Date.now() - item.timestamp > this.duration) {
+                    this.cache.delete(key);
+                    return null;
+                }
+                
+                return item.data;
+            }
+            
+            set(key, data) {
+                this.cache.set(key, {
+                    data,
+                    timestamp: Date.now()
+                });
+            }
+            
+            clear() {
+                this.cache.clear();
+            }
+        }
+        
+        const cache = new CacheManager();
+        
+        // Notification System
+        class NotificationManager {
+            show(message, type = 'info', duration = 3000) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div class="notification-icon">
+                        ${this.getIcon(type)}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${this.getTitle(type)}</div>
+                        <div class="notification-message">${message}</div>
+                    </div>
+                    <div class="notification-close" onclick="this.parentElement.remove()">✕</div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideUp 0.3s ease reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }, duration);
+            }
+            
+            getIcon(type) {
+                const icons = {
+                    success: '<svg viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+                    error: '<svg viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+                    info: '<svg viewBox="0 0 24 24" fill="none" stroke="#007aff" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+                };
+                return icons[type] || icons.info;
+            }
+            
+            getTitle(type) {
+                const titles = {
+                    success: '성공',
+                    error: '오류',
+                    info: '알림'
+                };
+                return titles[type] || '알림';
+            }
+        }
+        
+        const notification = new NotificationManager();
+        
+        // API Manager with multiple proxy methods
+        class APIManager {
+            constructor() {
+                this.workingMethod = null;
+                this.methods = [
+                    this.directCall.bind(this),
+                    this.allOriginsProxy.bind(this),
+                    this.corsProxy.bind(this),
+                    this.thingProxy.bind(this),
+                    this.hoppscotchProxy.bind(this)
+                ];
+            }
+            
+            async call(endpoint, params = {}) {
+                const baseUrl = `https://api.dooray.com${endpoint}`;
+                const queryString = new URLSearchParams(params).toString();
+                const url = `${baseUrl}${queryString ? '?' + queryString : ''}`;
+                
+                // Check cache first
+                const cacheKey = `${endpoint}_${queryString}`;
+                const cachedData = cache.get(cacheKey);
+                if (cachedData) {
+                    return cachedData;
+                }
+                
+                // Try working method first if available
+                if (this.workingMethod) {
+                    try {
+                        const result = await this.workingMethod(url);
+                        if (result) {
+                            cache.set(cacheKey, result);
+                            return result;
+                        }
+                    } catch (e) {
+                        console.log('Cached method failed, trying others...');
+                        this.workingMethod = null;
+                    }
+                }
+                
+                // Try all methods
+                for (const method of this.methods) {
+                    try {
+                        const result = await method(url);
+                        if (result) {
+                            this.workingMethod = method;
+                            cache.set(cacheKey, result);
+                            return result;
+                        }
+                    } catch (e) {
+                        console.log(`Method failed: ${e.message}`);
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                }
+                
+                throw new Error('모든 API 호출 방법이 실패했습니다');
+            }
+            
+            async directCall(url) {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `dooray-api ${CONFIG.API_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error('Direct call failed');
+            }
+            
+            async allOriginsProxy(url) {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status.http_code === 200) {
+                        return JSON.parse(data.contents);
+                    }
+                }
+                throw new Error('AllOrigins proxy failed');
+            }
+            
+            async corsProxy(url) {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${CONFIG.API_TOKEN}`
+                    }
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error('CorsProxy failed');
+            }
+            
+            async thingProxy(url) {
+                const proxyUrl = `https://thingproxy.freeboard.io/fetch/${url}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${CONFIG.API_TOKEN}`
+                    }
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error('ThingProxy failed');
+            }
+            
+            async hoppscotchProxy(url) {
+                const proxyUrl = `https://proxy.hoppscotch.io/${url}`;
+                const response = await fetch(proxyUrl, {
+                    headers: {
+                        'Authorization': `dooray-api ${CONFIG.API_TOKEN}`,
+                        'x-proxy-key': 'hoppscotch'
+                    }
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+                throw new Error('Hoppscotch proxy failed');
+            }
+        }
+        
+        const api = new APIManager();
+        
+        // UI Renderer
+        class UIRenderer {
+            static renderLoader() {
+                return `
+                    <div class="loader">
+                        <div class="spinner"></div>
+                        <p>회의실 현황을 불러오는 중...</p>
+                    </div>
+                `;
+            }
+            
+            static renderError(message) {
+                return `
+                    <div class="error-message">
+                        <h3>오류가 발생했습니다</h3>
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+            
+            static renderEmpty() {
+                return `
+                    <div class="empty-state">
+                        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <h3>예약 정보가 없습니다</h3>
+                        <p>선택한 날짜에 예약된 회의실이 없습니다.</p>
+                    </div>
+                `;
+            }
+            
+            static renderLocationTabs(locations, selectedId) {
+                return locations.map(loc => `
+                    <button class="location-tab ${loc.id === selectedId ? 'active' : ''}" 
+                            data-location-id="${loc.id}">
+                        ${loc.name}
+                    </button>
+                `).join('');
+            }
+            
+            static renderTimeline(location, rooms, reservations) {
+                const locationColor = this.getLocationColor(location.name);
+                const stats = this.calculateStats(rooms, reservations);
+                
+                let html = `
+                    <div class="location-header">
+                        <h2 class="location-title">${location.name}</h2>
+                        <div class="location-stats">
+                            <div class="stat-item">
+                                <div class="stat-dot" style="background: #34c759;"></div>
+                                <span>예약 가능: ${stats.available}개</span>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-dot" style="background: #ff9500;"></div>
+                                <span>사용 중: ${stats.occupied}개</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                html += '<div class="timeline-wrapper"><table class="timeline-table"><thead><tr><th class="room-name-cell">회의실</th>';
+                
+                // Time headers
+                for (let i = CONFIG.START_HOUR; i < CONFIG.END_HOUR; i++) {
+                    html += `<th colspan="2">${String(i).padStart(2, '0')}:00</th>`;
+                }
+                html += '</tr></thead><tbody>';
+                
+                // Process reservations by room
+                const resByRoom = {};
+                (reservations || []).forEach(res => {
+                    const roomId = res.resource?.id;
+                    if (roomId) {
+                        if (!resByRoom[roomId]) resByRoom[roomId] = [];
+                        resByRoom[roomId].push(res);
+                    }
+                });
+                
+                // Render each room
+                rooms.sort((a, b) => a.name.localeCompare(b.name)).forEach(room => {
+                    html += this.renderRoomRow(room, resByRoom[room.id] || [], locationColor);
+                });
+                
+                html += '</tbody></table></div>';
+                
+                // Add current time indicator
+                html += this.renderCurrentTimeIndicator();
+                
+                return html;
+            }
+            
+            static renderRoomRow(room, reservations, locationColor) {
+                let html = `<tr class="room-row" data-room-id="${room.id}">`;
+                html += `<td class="room-name-cell" title="${room.name}">${room.name}</td>`;
+                
+                const totalSlots = (CONFIG.END_HOUR - CONFIG.START_HOUR) * 2;
+                const slots = Array(totalSlots).fill(null);
+                
+                // Process reservations
+                reservations.forEach(res => {
+                    const start = new Date(res.startedAt);
+                    const end = new Date(res.endedAt);
+                    const startSlot = Math.max(0, (start.getHours() - CONFIG.START_HOUR) * 2 + Math.floor(start.getMinutes() / 30));
+                    const endSlot = Math.min(totalSlots, (end.getHours() - CONFIG.START_HOUR) * 2 + Math.ceil(end.getMinutes() / 30));
+                    const colspan = endSlot - startSlot;
+                    
+                    if (colspan > 0 && startSlot < totalSlots) {
+                        const user = res.users?.from?.member;
+                        const isMy = state.myInfo.id && user && user.organizationMemberId === state.myInfo.id;
+                        
+                        slots[startSlot] = {
+                            colspan,
+                            subject: res.subject || '제목 없음',
+                            userName: user ? user.name : '정보 없음',
+                            isMyBooking: isMy,
+                            startTime: start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                            endTime: end.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+                            id: res.id
+                        };
+                        
+                        for (let i = 1; i < colspan && startSlot + i < totalSlots; i++) {
+                            slots[startSlot + i] = 'skip';
+                        }
+                    }
+                });
+                
+                // Render slots
+                slots.forEach((slot, index) => {
+                    if (slot === null) {
+                        html += '<td class="time-slot"></td>';
+                    } else if (slot !== 'skip') {
+                        const bgColor = slot.isMyBooking ? CONFIG.MY_BOOKING_COLOR : locationColor;
+                        html += `
+                            <td colspan="${slot.colspan}">
+                                <div class="booked" 
+                                     style="background: linear-gradient(135deg, ${bgColor}, ${this.adjustColor(bgColor, -20)});"
+                                     data-reservation-id="${slot.id}"
+                                     onmouseover="showTooltip(event, ${JSON.stringify(slot).replace(/"/g, '&quot;')})"
+                                     onmouseout="hideTooltip()">
+                                    <div class="booked-content">
+                                        <div class="booked-subject">${slot.subject}</div>
+                                        <div class="booked-user">${slot.userName}</div>
+                                        <div class="booked-time">${slot.startTime} - ${slot.endTime}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                    }
+                });
+                
+                html += '</tr>';
+                return html;
+            }
+            
+            static renderCurrentTimeIndicator() {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                
+                if (currentHour < CONFIG.START_HOUR || currentHour >= CONFIG.END_HOUR) {
+                    return '';
+                }
+                
+                const position = ((currentHour - CONFIG.START_HOUR) * 60 + currentMinute) / ((CONFIG.END_HOUR - CONFIG.START_HOUR) * 60) * 100;
+                
+                return `<div class="current-time-indicator" style="left: calc(180px + ${position}%);"></div>`;
+            }
+            
+            static getLocationColor(locationName) {
+                let hash = 0;
+                for (let i = 0; i < locationName.length; i++) {
+                    hash = locationName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return CONFIG.LOCATION_COLORS[Math.abs(hash % CONFIG.LOCATION_COLORS.length)];
+            }
+            
+            static adjustColor(color, amount) {
+                const clamp = (num) => Math.min(255, Math.max(0, num));
+                const num = parseInt(color.replace('#', ''), 16);
+                const r = clamp((num >> 16) + amount);
+                const g = clamp(((num >> 8) & 0x00FF) + amount);
+                const b = clamp((num & 0x0000FF) + amount);
+                return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+            }
+            
+            static calculateStats(rooms, reservations) {
+                const now = new Date();
+                let available = 0;
+                let occupied = 0;
+                
+                rooms.forEach(room => {
+                    const roomReservations = reservations.filter(r => r.resource?.id === room.id);
+                    const isOccupied = roomReservations.some(r => {
+                        const start = new Date(r.startedAt);
+                        const end = new Date(r.endedAt);
+                        return now >= start && now <= end;
+                    });
+                    
+                    if (isOccupied) {
+                        occupied++;
+                    } else {
+                        available++;
+                    }
+                });
+                
+                return { available, occupied, total: rooms.length };
+            }
+        }
+        
+        // Main App Controller
+        class MeetingRoomApp {
+            constructor() {
+                this.init();
+            }
+            
+            async init() {
+                this.setupEventListeners();
+                this.startClock();
+                await this.loadUserInfo();
+                await this.loadData();
+                this.startAutoRefresh();
+            }
+            
+            setupEventListeners() {
+                // Date controls
+                document.getElementById('date-picker').valueAsDate = new Date();
+                document.getElementById('date-picker').addEventListener('change', () => this.loadData());
+                document.getElementById('prev-day').addEventListener('click', () => this.changeDate(-1));
+                document.getElementById('next-day').addEventListener('click', () => this.changeDate(1));
+                document.getElementById('today-btn').addEventListener('click', () => this.goToToday());
+                document.getElementById('refresh-btn').addEventListener('click', () => {
+                    cache.clear();
+                    this.loadData();
+                });
+                
+                // Search
+                document.getElementById('search-input').addEventListener('input', (e) => {
+                    state.searchQuery = e.target.value;
+                    this.applyFilters();
+                });
+                
+                // Filters
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        state.filter = e.target.dataset.filter;
+                        this.applyFilters();
+                    });
+                });
+            }
+            
+            changeDate(offset) {
+                const picker = document.getElementById('date-picker');
+                const currentDate = picker.valueAsDate;
+                currentDate.setDate(currentDate.getDate() + offset);
+                picker.valueAsDate = currentDate;
+                this.loadData();
+            }
+            
+            goToToday() {
+                const picker = document.getElementById('date-picker');
+                picker.valueAsDate = new Date();
+                this.loadData();
+            }
+            
+            startClock() {
+                const updateClock = () => {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('ko-KR', { hour12: false });
+                    const dateString = now.toLocaleDateString('ko-KR', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric',
+                        weekday: 'long'
+                    });
+                    
+                    document.querySelector('.clock-time').textContent = timeString;
+                    document.querySelector('.clock-date').textContent = dateString;
+                };
+                
+                updateClock();
+                setInterval(updateClock, 1000);
+            }
+            
+            startAutoRefresh() {
+                setInterval(() => {
+                    this.loadData(true); // Silent refresh
+                }, CONFIG.AUTO_REFRESH);
+            }
+            
+            async loadUserInfo() {
+                try {
+                    const response = await api.call('/common/v1/members/me');
+                    state.myInfo = response.result || {};
+                    console.log('User info loaded:', state.myInfo);
+                } catch (error) {
+                    console.log('Failed to load user info:', error);
+                }
+            }
+            
+            async loadData(silent = false) {
+                const mainContent = document.getElementById('main-content');
+                const locationTabs = document.getElementById('location-tabs');
+                
+                if (!silent) {
+                    mainContent.innerHTML = UIRenderer.renderLoader();
+                }
+                
+                try {
+                    // Load locations
+                    const locResponse = await api.call('/reservation/v1/resource-categories', { size: 20 });
+                    state.locations = (locResponse.result || []).sort((a, b) => {
+                        const nameA = a.name || '';
+                        const nameB = b.name || '';
+                        if (nameA.includes("판교")) return -1;
+                        if (nameB.includes("판교")) return 1;
+                        return nameA.localeCompare(nameB);
+                    });
+                    
+                    if (state.locations.length === 0) {
+                        mainContent.innerHTML = UIRenderer.renderEmpty();
+                        return;
+                    }
+                    
+                    // Render location tabs
+                    if (!state.selectedLocation && state.locations.length > 0) {
+                        state.selectedLocation = state.locations[0].id;
+                    }
+                    
+                    locationTabs.innerHTML = UIRenderer.renderLocationTabs(state.locations, state.selectedLocation);
+                    
+                    // Add tab click handlers
+                    document.querySelectorAll('.location-tab').forEach(tab => {
+                        tab.addEventListener('click', (e) => {
+                            state.selectedLocation = e.target.dataset.locationId;
+                            this.loadData();
+                        });
+                    });
+                    
+                    // Load data for selected location
+                    const selectedLoc = state.locations.find(l => l.id === state.selectedLocation);
+                    if (selectedLoc) {
+                        await this.loadLocationData(selectedLoc);
+                    }
+                    
+                    if (!silent) {
+                        notification.show('데이터를 성공적으로 불러왔습니다', 'success');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    mainContent.innerHTML = UIRenderer.renderError(error.message);
+                    notification.show('데이터 로드 중 오류가 발생했습니다', 'error');
+                }
+            }
+            
+            async loadLocationData(location) {
+                const mainContent = document.getElementById('main-content');
+                const date = document.getElementById('date-picker').value;
+                
+                try {
+                    // Load rooms
+                    const roomsResponse = await api.call('/reservation/v1/reservable-resources', {
+                        resourceCategoryId: location.id,
+                        size: 200
+                    });
+                    const rooms = roomsResponse.result || [];
+                    
+                    if (rooms.length === 0) {
+                        mainContent.innerHTML = UIRenderer.renderEmpty();
+                        return;
+                    }
+                    
+                    // Load reservations
+                    const timeMin = `${date}T00:00:00+09:00`;
+                    const nextDate = new Date(date);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    const timeMax = `${nextDate.toISOString().split('T')[0]}T00:00:00+09:00`;
+                    
+                    const roomIds = rooms.map(r => r.id).join(',');
+                    let reservations = [];
+                    
+                    try {
+                        const resResponse = await api.call('/reservation/v1/resource-reservations', {
+                            resourceIds: roomIds,
+                            timeMin: timeMin,
+                            timeMax: timeMax,
+                            size: 500
+                        });
+                        reservations = resResponse.result || [];
+                    } catch (error) {
+                        console.log('Failed to load reservations:', error);
+                    }
+                    
+                    // Store in state
+                    state.rooms[location.id] = rooms;
+                    state.reservations[location.id] = reservations;
+                    
+                    // Render timeline
+                    mainContent.innerHTML = UIRenderer.renderTimeline(location, rooms, reservations);
+                    
+                    // Apply filters if any
+                    this.applyFilters();
+                    
+                } catch (error) {
+                    console.error('Error loading location data:', error);
+                    mainContent.innerHTML = UIRenderer.renderError(error.message);
+                }
+            }
+            
+            applyFilters() {
+                const { filter, searchQuery } = state;
+                const rows = document.querySelectorAll('.room-row');
+                
+                rows.forEach(row => {
+                    let show = true;
+                    
+                    // Search filter
+                    if (searchQuery) {
+                        const roomName = row.querySelector('.room-name-cell').textContent.toLowerCase();
+                        const hasMatch = roomName.includes(searchQuery.toLowerCase()) ||
+                            Array.from(row.querySelectorAll('.booked-user')).some(el => 
+                                el.textContent.toLowerCase().includes(searchQuery.toLowerCase())
+                            );
+                        show = hasMatch;
+                    }
+                    
+                    // Status filter
+                    if (show && filter !== 'all') {
+                        if (filter === 'available') {
+                            show = row.querySelectorAll('.booked').length === 0;
+                        } else if (filter === 'my-bookings') {
+                            show = Array.from(row.querySelectorAll('.booked')).some(el => 
+                                el.style.background.includes(CONFIG.MY_BOOKING_COLOR)
+                            );
+                        }
+                    }
+                    
+                    row.style.display = show ? '' : 'none';
+                });
+            }
+        }
+        
+        // Tooltip functions
+        function showTooltip(event, data) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.innerHTML = `
+                <div class="tooltip-title">${data.subject}</div>
+                <div class="tooltip-info">
+                    <div>예약자: ${data.userName}</div>
+                    <div>시간: ${data.startTime} - ${data.endTime}</div>
+                    ${data.isMyBooking ? '<div style="color: #00d4aa; margin-top: 0.3rem;">✓ 내 예약</div>' : ''}
+                </div>
+            `;
+            
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + rect.width / 2}px`;
+            tooltip.style.top = `${rect.top - 10}px`;
+            tooltip.style.transform = 'translate(-50%, -100%)';
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+        }
+        
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new MeetingRoomApp();
+        });
+    </script>
+</body>
+</html>

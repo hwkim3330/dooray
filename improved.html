@@ -344,8 +344,8 @@
         .timeline-table {
             border-collapse: collapse;
             width: 100%;
-            min-width: 900px;
-            table-layout: fixed;
+            min-width: 1200px;
+            table-layout: auto;
         }
         
         .timeline-table th,
@@ -371,9 +371,10 @@
             left: 0;
             z-index: 2;
             background: var(--bg-secondary);
-            padding: 1em 1em;
+            padding: 1em 1.2em;
             font-weight: 500;
-            width: 180px;
+            min-width: 200px;
+            width: 200px;
             text-align: left;
             white-space: nowrap;
             overflow: hidden;
@@ -392,6 +393,7 @@
         
         .time-slot {
             height: 50px;
+            min-width: 40px;
             position: relative;
             transition: var(--transition);
         }
@@ -751,7 +753,7 @@
             </div>
             <div class="header-clock" id="header-clock">
                 <div class="clock-time">00:00:00</div>
-                <div class="clock-date">2024년 1월 1일</div>
+                <div class="clock-date">월요일</div>
             </div>
             <div class="date-controls">
                 <button class="btn btn-secondary btn-icon" id="prev-day" title="이전 날짜">
@@ -821,7 +823,7 @@
             START_HOUR: 9,
             END_HOUR: 19,
             CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
-            AUTO_REFRESH: 60 * 1000, // 1 minute
+            AUTO_REFRESH: 30 * 1000, // 30 seconds
             LOCATION_COLORS: ['#667eea', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa', '#ffcc00', '#4cd964']
         };
         
@@ -1111,7 +1113,7 @@
                 
                 // Time headers
                 for (let i = CONFIG.START_HOUR; i < CONFIG.END_HOUR; i++) {
-                    html += `<th colspan="2">${String(i).padStart(2, '0')}:00</th>`;
+                    html += `<th colspan="2" style="min-width: 80px;">${String(i).padStart(2, '0')}:00</th>`;
                 }
                 html += '</tr></thead><tbody>';
                 
@@ -1317,15 +1319,10 @@
                 const updateClock = () => {
                     const now = new Date();
                     const timeString = now.toLocaleTimeString('ko-KR', { hour12: false });
-                    const dateString = now.toLocaleDateString('ko-KR', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric',
-                        weekday: 'long'
-                    });
+                    const weekday = now.toLocaleDateString('ko-KR', { weekday: 'long' });
                     
                     document.querySelector('.clock-time').textContent = timeString;
-                    document.querySelector('.clock-date').textContent = dateString;
+                    document.querySelector('.clock-date').textContent = weekday;
                 };
                 
                 updateClock();

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KETI 회의실 - 대학 시간표 스타일</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        /* 상단 헤더 */
+        .header {
+            background: linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%);
+            padding: 20px 30px;
+            color: white;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .semester-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .semester-label {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* 시간표 컨테이너 */
+        .timetable-wrapper {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .timetable-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: auto;
+            max-height: 70vh;
+        }
+        
+        /* 시간표 그리드 */
+        .timetable {
+            display: grid;
+            grid-template-columns: 80px repeat(var(--room-count, 5), minmax(180px, 1fr));
+            position: relative;
+            min-width: 1000px;
+        }
+        
+        /* 시간 컬럼 (왼쪽) */
+        .time-column {
+            background: #f8f9fa;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            border-right: 2px solid #dee2e6;
+        }
+        
+        .time-header {
+            height: 50px;
+            background: #495057;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid #343a40;
+        }
+        
+        .time-slot-label {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 13px;
+            color: #495057;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+        
+        .time-slot-label.hour {
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+        
+        /* 회의실 컬럼들 */
+        .room-column {
+            position: relative;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .room-header {
+            height: 50px;
+            background: #6c757d;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid #495057;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        
+        .room-name {
+            font-size: 15px;
+            font-weight: 700;
+        }
+        
+        .room-floor {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        /* 시간 슬롯 */
+        .time-slots {
+            position: relative;
+            background: white;
+        }
+        
+        .time-slot {
+            height: 30px;
+            border-bottom: 1px solid #f1f3f5;
+            position: relative;
+        }
+        
+        .time-slot.hour {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .time-slot:hover {
+            background: #f8f9fa;
+        }
+        
+        /* 회의 블록 (수업 블록처럼) */
+        .meeting-block {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            border-radius: 8px;
+            padding: 8px;
+            color: white;
+            cursor: pointer;
+            overflow: hidden;
+            z-index: 3;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .meeting-block:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 4;
+        }
+        
+        /* 대학 시간표 색상 팔레트 */
+        .meeting-block.color-1 { background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); }
+        .meeting-block.color-2 { background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); }
+        .meeting-block.color-3 { background: linear-gradient(135deg, #45B7D1 0%, #2196F3 100%); }
+        .meeting-block.color-4 { background: linear-gradient(135deg, #F7B731 0%, #FA8231 100%); }
+        .meeting-block.color-5 { background: linear-gradient(135deg, #5F27CD 0%, #7C4DFF 100%); }
+        .meeting-block.color-6 { background: linear-gradient(135deg, #00D2D3 0%, #01A3A4 100%); }
+        .meeting-block.color-7 { background: linear-gradient(135deg, #F368E0 0%, #EE5A6F 100%); }
+        .meeting-block.color-8 { background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%); }
+        
+        .meeting-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .meeting-room {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 2px;
+        }
+        
+        .meeting-user {
+            font-size: 11px;
+            opacity: 0.85;
+        }
+        
+        /* 통계 카드 */
+        .stats-container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* 컨트롤 버튼 */
+        .controls {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            background: #f8f9fa;
+            border-color: #adb5bd;
+        }
+        
+        .control-btn.active {
+            background: #4ECDC4;
+            color: white;
+            border-color: #4ECDC4;
+        }
+        
+        /* 로딩 */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: #6c757d;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f8f9fa;
+            border-top-color: #4ECDC4;
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 현재 시간 표시선 */
+        .current-time-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #FF6B6B;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .current-time-line::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: -4px;
+            width: 10px;
+            height: 10px;
+            background: #FF6B6B;
+            border-radius: 50%;
+        }
+        
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%);
+            color: white;
+            padding: 20px 25px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .modal-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+        
+        .modal-row:last-child {
+            border-bottom: none;
+        }
+        
+        .modal-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .modal-value {
+            color: #212529;
+            text-align: right;
+        }
+        
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            opacity: 0.7;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .timetable {
+                grid-template-columns: 60px repeat(var(--room-count, 5), minmax(120px, 1fr));
+                min-width: 600px;
+            }
+            
+            .room-header,
+            .time-header {
+                font-size: 12px;
+            }
+            
+            .meeting-title {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="title">📚 KETI 회의실 시간표</div>
+                <div class="semester-info">
+                    <div class="semester-label">2024년 오늘</div>
+                    <div class="semester-label" id="currentTime">00:00:00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRooms">0</div>
+                <div class="stat-label">전체 회의실</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="availableRooms">0</div>
+                <div class="stat-label">이용 가능</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalMeetings">0</div>
+                <div class="stat-label">오늘 회의</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn active" onclick="app.filterLocation('all')">전체</button>
+            <button class="control-btn" onclick="app.filterLocation('global')">글로벌R&D</button>
+            <button class="control-btn" onclick="app.filterLocation('gbc')">GBC</button>
+            <button class="control-btn" onclick="app.refreshAll()">🔄 새로고침</button>
+        </div>
+        
+        <div class="timetable-wrapper">
+            <div class="timetable-container" id="timetableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>시간표를 불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 회의 상세 모달 -->
+    <div id="meetingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <div class="modal-title" id="modalTitle">회의 상세 정보</div>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 동적으로 채워짐 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API = {
+            TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+            START_HOUR: 9,
+            END_HOUR: 19,
+            
+            async fetch(endpoint, params = {}) {
+                const baseUrl = 'https://api.dooray.com' + endpoint;
+                const queryString = new URLSearchParams(params).toString();
+                const url = baseUrl + (queryString ? '?' + queryString : '');
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                
+                const response = await fetch(proxyUrl, {
+                    headers: { 'Authorization': `dooray-api ${this.TOKEN}` }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            }
+        };
+        
+        class UniversityTimetableApp {
+            constructor() {
+                this.locations = [];
+                this.allRooms = [];
+                this.allReservations = [];
+                this.currentFilter = 'all';
+                this.roomColors = new Map();
+                this.init();
+            }
+            
+            init() {
+                this.setupClock();
+                this.setupModal();
+                this.loadAllData();
+                setInterval(() => this.loadAllData(true), 5 * 60 * 1000);
+                setInterval(() => this.updateCurrentTimeLine(), 60 * 1000);
+            }
+            
+            setupClock() {
+                const updateClock = () => {
+                    const now = new Date();
+                    document.getElementById('currentTime').textContent = 
+                        now.toLocaleTimeString('ko-KR');
+                };
+                updateClock();
+                setInterval(updateClock, 1000);
+            }
+            
+            setupModal() {
+                const modal = document.getElementById('meetingModal');
+                const span = document.getElementsByClassName('close')[0];
+                
+                span.onclick = () => modal.style.display = 'none';
+                window.onclick = (event) => {
+                    if (event.target === modal) modal.style.display = 'none';
+                };
+            }
+            
+            async loadAllData(silent = false) {
+                try {
+                    if (!silent) {
+                        document.getElementById('timetableContainer').innerHTML = `
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <div>시간표를 불러오는 중...</div>
+                            </div>`;
+                    }
+                    
+                    // Load locations
+                    const locData = await API.fetch('/reservation/v1/resource-categories', { size: 20 });
+                    this.locations = (locData.result || []).filter(loc => 
+                        loc.name && (loc.name.includes('판교(글로벌R&D센터)') || loc.name.includes('판교(GBC)'))
+                    );
+                    
+                    // Load all rooms and reservations
+                    this.allRooms = [];
+                    this.allReservations = [];
+                    
+                    const now = new Date();
+                    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    
+                    for (const location of this.locations) {
+                        const roomData = await API.fetch('/reservation/v1/reservable-resources', {
+                            resourceCategoryId: location.id, size: 200
+                        });
+                        
+                        const rooms = roomData.result || [];
+                        rooms.forEach(room => {
+                            room.locationName = location.name;
+                            room.locationId = location.id;
+                            this.allRooms.push(room);
+                        });
+                        
+                        if (rooms.length > 0) {
+                            const roomIds = rooms.map(r => r.id).join(',');
+                            const resData = await API.fetch('/reservation/v1/resource-reservations', {
+                                resourceIds: roomIds,
+                                timeMin: `${today}T00:00:00+09:00`,
+                                timeMax: `${today}T23:59:59+09:00`,
+                                size: 500
+                            });
+                            
+                            const reservations = resData.result || [];
+                            this.allReservations.push(...reservations);
+                        }
+                    }
+                    
+                    this.assignColors();
+                    this.updateStats();
+                    this.renderTimetable();
+                    this.updateCurrentTimeLine();
+                    
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    if (!silent) {
+                        document.getElementById('timetableContainer').innerHTML = `
+                            <div class="loading">
+                                <div style="color: #dc3545;">❌ 데이터를 불러올 수 없습니다</div>
+                            </div>`;
+                    }
+                }
+            }
+            
+            assignColors() {
+                const colors = ['color-1', 'color-2', 'color-3', 'color-4', 
+                                'color-5', 'color-6', 'color-7', 'color-8'];
+                let colorIndex = 0;
+                
+                // 회의별로 색상 할당 (같은 회의실의 회의는 같은 색상)
+                this.allReservations.forEach(reservation => {
+                    const key = reservation.resource?.id || reservation.id;
+                    if (!this.roomColors.has(key)) {
+                        this.roomColors.set(key, colors[colorIndex % colors.length]);
+                        colorIndex++;
+                    }
+                });
+            }
+            
+            filterLocation(filter) {
+                this.currentFilter = filter;
+                
+                // 버튼 스타일 업데이트
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                this.renderTimetable();
+            }
+            
+            getFilteredRooms() {
+                if (this.currentFilter === 'all') {
+                    return this.allRooms;
+                } else if (this.currentFilter === 'global') {
+                    return this.allRooms.filter(room => 
+                        room.locationName.includes('글로벌R&D'));
+                } else if (this.currentFilter === 'gbc') {
+                    return this.allRooms.filter(room => 
+                        room.locationName.includes('GBC'));
+                }
+                return this.allRooms;
+            }
+            
+            updateStats() {
+                const now = new Date();
+                const rooms = this.getFilteredRooms();
+                
+                let availableCount = 0;
+                rooms.forEach(room => {
+                    const isOccupied = this.allReservations.some(res => {
+                        if (res.resource?.id !== room.id) return false;
+                        const start = new Date(res.startedAt);
+                        const end = new Date(res.endedAt);
+                        return now >= start && now <= end;
+                    });
+                    if (!isOccupied) availableCount++;
+                });
+                
+                document.getElementById('totalRooms').textContent = rooms.length;
+                document.getElementById('availableRooms').textContent = availableCount;
+                document.getElementById('totalMeetings').textContent = this.allReservations.length;
+            }
+            
+            formatRoomName(room) {
+                const match = room.name.match(/^(\d+층)\s*(.*)$/);
+                if (match) {
+                    return {
+                        floor: match[1],
+                        name: (match[2] || '회의실').replace('회의실', '').trim() || '회의실'
+                    };
+                }
+                return {
+                    floor: room.locationName.includes('글로벌R&D') ? 'Global' : 'GBC',
+                    name: room.name.replace('회의실', '').trim() || '회의실'
+                };
+            }
+            
+            renderTimetable() {
+                const rooms = this.getFilteredRooms().sort((a, b) => 
+                    a.name.localeCompare(b.name));
+                
+                if (rooms.length === 0) {
+                    document.getElementById('timetableContainer').innerHTML = `
+                        <div class="loading">
+                            <div>회의실이 없습니다</div>
+                        </div>`;
+                    return;
+                }
+                
+                // CSS 변수로 룸 개수 설정
+                document.documentElement.style.setProperty('--room-count', rooms.length.toString());
+                
+                let html = '<div class="timetable">';
+                
+                // 시간 컬럼 (왼쪽)
+                html += '<div class="time-column">';
+                html += '<div class="time-header">시간</div>';
+                
+                for (let hour = API.START_HOUR; hour < API.END_HOUR; hour++) {
+                    html += `<div class="time-slot-label hour">${hour}:00</div>`;
+                    html += `<div class="time-slot-label">${hour}:30</div>`;
+                }
+                html += '</div>';
+                
+                // 각 회의실 컬럼
+                rooms.forEach(room => {
+                    const roomInfo = this.formatRoomName(room);
+                    
+                    html += '<div class="room-column">';
+                    html += `
+                        <div class="room-header">
+                            <div class="room-name">${roomInfo.name}</div>
+                            <div class="room-floor">${roomInfo.floor}</div>
+                        </div>
+                        <div class="time-slots">`;
+                    
+                    // 시간 슬롯들
+                    for (let hour = API.START_HOUR; hour < API.END_HOUR; hour++) {
+                        html += `<div class="time-slot hour" data-time="${hour}:00"></div>`;
+                        html += `<div class="time-slot" data-time="${hour}:30"></div>`;
+                    }
+                    
+                    // 이 회의실의 예약들
+                    const roomReservations = this.allReservations.filter(res => 
+                        res.resource?.id === room.id);
+                    
+                    roomReservations.forEach(reservation => {
+                        const start = new Date(reservation.startedAt);
+                        const end = new Date(reservation.endedAt);
+                        
+                        // 시간 계산
+                        const startMinutes = (start.getHours() - API.START_HOUR) * 60 + start.getMinutes();
+                        const endMinutes = (end.getHours() - API.START_HOUR) * 60 + end.getMinutes();
+                        const duration = endMinutes - startMinutes;
+                        
+                        // 위치와 높이 계산 (30분 = 30px)
+                        const top = startMinutes + 50; // 50px는 헤더 높이
+                        const height = duration;
+                        
+                        const colorClass = this.roomColors.get(room.id);
+                        
+                        html += `
+                            <div class="meeting-block ${colorClass}" 
+                                 style="top: ${top}px; height: ${height}px;"
+                                 onclick="app.showMeetingDetails('${reservation.id}')"
+                                 data-meeting-id="${reservation.id}">
+                                <div class="meeting-title">${reservation.subject || '회의'}</div>
+                                <div class="meeting-room">${roomInfo.name}</div>
+                                <div class="meeting-user">${reservation.users?.from?.member?.name || '예약자'}</div>
+                            </div>`;
+                    });
+                    
+                    html += '</div></div>';
+                });
+                
+                html += '</div>';
+                
+                document.getElementById('timetableContainer').innerHTML = html;
+                this.updateStats();
+            }
+            
+            updateCurrentTimeLine() {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = now.getMinutes();
+                
+                if (currentHour >= API.START_HOUR && currentHour < API.END_HOUR) {
+                    // 기존 선 제거
+                    document.querySelectorAll('.current-time-line').forEach(el => el.remove());
+                    
+                    // 새 선 추가
+                    const minutesSinceStart = (currentHour - API.START_HOUR) * 60 + currentMinute;
+                    const top = minutesSinceStart + 50; // 50px는 헤더 높이
+                    
+                    const timeLine = document.createElement('div');
+                    timeLine.className = 'current-time-line';
+                    timeLine.style.top = `${top}px`;
+                    
+                    const timetable = document.querySelector('.timetable');
+                    if (timetable) {
+                        timetable.appendChild(timeLine);
+                    }
+                }
+            }
+            
+            showMeetingDetails(meetingId) {
+                const meeting = this.allReservations.find(m => m.id === meetingId);
+                if (!meeting) return;
+                
+                const room = this.allRooms.find(r => r.id === meeting.resource?.id);
+                const start = new Date(meeting.startedAt);
+                const end = new Date(meeting.endedAt);
+                
+                document.getElementById('modalTitle').textContent = meeting.subject || '회의';
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="modal-row">
+                        <div class="modal-label">회의실</div>
+                        <div class="modal-value">${room?.name || '알 수 없음'}</div>
+                    </div>
+                    <div class="modal-row">
+                        <div class="modal-label">시간</div>
+                        <div class="modal-value">${start.toLocaleString('ko-KR')} - ${end.toLocaleTimeString('ko-KR')}</div>
+                    </div>
+                    <div class="modal-row">
+                        <div class="modal-label">예약자</div>
+                        <div class="modal-value">${meeting.users?.from?.member?.name || '알 수 없음'}</div>
+                    </div>
+                    <div class="modal-row">
+                        <div class="modal-label">참석자</div>
+                        <div class="modal-value">${meeting.users?.to?.length || 0}명</div>
+                    </div>
+                `;
+                
+                document.getElementById('meetingModal').style.display = 'block';
+            }
+            
+            async refreshAll() {
+                await this.loadAllData();
+            }
+        }
+        
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            app = new UniversityTimetableApp();
+        });
+    </script>
+</body>
+</html>

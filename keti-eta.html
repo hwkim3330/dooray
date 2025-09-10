@@ -479,9 +479,10 @@
         </div>
     </div>
     
+    <script src="token-manager.js"></script>
     <script>
         const API = {
-            TOKEN: 's701wolho5si:QQ5-gGPzTymiCSytV3vSRA',
+            TOKEN: null, // Will be set after token check
             START_HOUR: 9,
             END_HOUR: 19,
             
@@ -823,6 +824,13 @@
         
         let app;
         document.addEventListener('DOMContentLoaded', () => {
+            // Check for token first
+            const token = TokenManager.getToken();
+            if (!token) {
+                document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><div style="text-align:center;"><h1>🔐 토큰이 필요합니다</h1><p>새로고침하여 토큰을 입력해주세요.</p><button onclick="location.reload()" style="padding:10px 20px;background:#007AFF;color:white;border:none;border-radius:5px;cursor:pointer;margin-top:20px;">새로고침</button></div></div>';
+                return;
+            }
+            API.TOKEN = token;
             app = new UniversityTimetableApp();
         });
     </script>

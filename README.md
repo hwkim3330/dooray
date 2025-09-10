@@ -6,6 +6,19 @@
 
 KETI(한국전자기술연구원) 회의실 예약 현황을 실시간으로 확인할 수 있는 웹 대시보드 시스템입니다.
 
+## 🔐 보안 업데이트 (중요!)
+
+**v2.0부터 API 토큰이 코드에서 제거되었습니다.**
+- 첫 실행 시 Dooray API 토큰 입력 필요
+- 토큰은 브라우저 localStorage에 안전하게 저장
+- 토큰 변경은 우측 하단 버튼으로 가능
+
+### 토큰 발급 방법
+1. [Dooray](https://dooray.com) 로그인
+2. 설정 → API 토큰 관리
+3. 새 토큰 생성
+4. 형식: `tenantId:token` (예: `s701wolho5si:your-token-here`)
+
 ## ✨ 주요 기능
 
 ### 📊 실시간 회의실 현황
@@ -18,11 +31,37 @@ KETI(한국전자기술연구원) 회의실 예약 현황을 실시간으로 확
 - 예약 가능한 회의실만 필터링
 - 내 예약 현황 빠른 확인
 
-### 🎨 모던한 UI/UX
-- 그라디언트 배경의 세련된 디자인
-- 반응형 레이아웃 (모바일/태블릿/데스크톱)
-- 다크모드 자동 지원
-- 부드러운 애니메이션 효과
+### 🎨 다양한 UI 테마 (7가지)
+각 테마는 동일한 기능을 제공하며 디자인만 다릅니다.
+
+#### 📚 **keti-eta.html** - 대학 시간표 스타일
+- 에브리타임 같은 대학교 시간표 UI
+- 세로축 시간, 가로축 회의실
+- 알록달록한 그라데이션 색상
+
+#### 🍎 **keti-apple.html** - Apple 스타일 (준비중)
+- Apple 디자인 가이드라인 적용
+- 깔끔하고 모던한 인터페이스
+
+#### 🌃 **keti-neon.html** - 네온/사이버펑크 (준비중)
+- 어두운 배경에 네온 효과
+- 미래적인 사이버펑크 테마
+
+#### 📰 **keti-newspaper.html** - 신문 스타일 (준비중)
+- 클래식한 신문 레이아웃
+- 세리프 폰트와 컬럼 구조
+
+#### 📱 **keti-mobile.html** - 모바일 최적화 (준비중)
+- 모바일 퍼스트 디자인
+- 터치 최적화 인터페이스
+
+#### 🕹️ **keti-retro.html** - 레트로 아케이드 (준비중)
+- 8비트 픽셀 아트 스타일
+- 복고풍 게임 UI
+
+#### ⚪ **keti-white.html** - 화이트 테마 (준비중)
+- 미니멀한 화이트 디자인
+- 깔끔한 타이포그래피
 
 ### ⚡ 성능 최적화
 - 5분 캐싱 시스템으로 빠른 로딩
@@ -32,181 +71,64 @@ KETI(한국전자기술연구원) 회의실 예약 현황을 실시간으로 확
 ## 🚀 빠른 시작
 
 ### 온라인 사용
-[https://hwkim3330.github.io/dooray/improved.html](https://hwkim3330.github.io/dooray/improved.html) ⭐ **추천**
+1. 원하는 테마 선택:
+   - [대학 시간표 스타일](https://hwkim3330.github.io/dooray/keti-eta.html) ⭐ **추천**
+   - [최신 개선 버전](https://hwkim3330.github.io/dooray/improved.html)
+   - [기본 버전](https://hwkim3330.github.io/dooray/)
 
-## 🎨 버전별 사용 방법
+2. Dooray API 토큰 입력
+3. 회의실 현황 확인!
 
-### 🌟 최신 개선 버전 (improved.html) - **추천**
-**https://hwkim3330.github.io/dooray/improved.html**
-- 모든 기능이 통합된 최신 버전
-- 모듈화된 코드 구조
-- 향상된 성능과 UI/UX
-- 실시간 검색 및 필터링
-- 탭 방식 위치 선택
+## 🛠️ 로컬 설치
 
-### 📱 기본 버전 (index.html)
-**https://hwkim3330.github.io/dooray/**
-- 기본 밝은 테마
-- 중앙 실시간 시계
-- 반응형 디자인
-- 기본 토큰 내장
+```bash
+# 저장소 클론
+git clone https://github.com/hwkim3330/dooray.git
 
-### 🌙 다크 모드 (dark.html)
-**https://hwkim3330.github.io/dooray/dark.html**
-- 다크 테마 (네온 블루 + 그라디언트)
-- 대형 화면 최적화
-- 눈이 편한 야간 모드
-- 향상된 CORS 처리
+# 폴더 이동
+cd dooray
 
-### ⚡ 안정화 버전 (stable.html)
-**https://hwkim3330.github.io/dooray/stable.html**
-- 안정성 중심 설계
-- 연결 상태 실시간 표시
-- 자동 새로고침 (1분 간격)
-- 수동 새로고침 버튼
-- 마지막 업데이트 시간 표시
+# 웹 서버 실행 (Python 3)
+python -m http.server 8000
 
-### 🔄 자동 새로고침 버전 (auto.html)
-**https://hwkim3330.github.io/dooray/auto.html**
-- 프리미엄 디자인
-- 자동 새로고침 간격 설정 가능 (30초/1분/2분/5분)
-- 실시간 통계 (전체/사용중/예약/가능)
-- 진행 상태바
-- 그라디언트 배경
-
-### 📊 대시보드 버전 (dashboard.html)
-**https://hwkim3330.github.io/dooray/dashboard.html**
-- 전문가용 대시보드 UI
-- 사이드바 네비게이션
-- 실시간 통계 카드
-- 위치별 필터링
-- 다크 테마 전용
-- 자동 새로고침 (1분)
+# 브라우저에서 열기
+# http://localhost:8000/keti-eta.html
+```
 
 ## 📁 파일 구조
 
 ```
 dooray/
-├── improved.html       # 🌟 최신 개선 버전 (권장)
-├── working.html        # 작동 확인된 안정 버전
-├── stable.html         # 기본 안정 버전
-├── index.html          # 원본 버전
-├── simple.html         # 간단한 버전
-├── dashboard.html      # 대시보드 버전
-├── dark.html           # 다크모드 버전
-├── auto.html           # 자동 새로고침 버전
-├── favicon.svg         # 파비콘
-├── cloudflare-worker.js # Cloudflare Worker 프록시
-├── CORS_SOLUTION.md    # CORS 해결 방법
-├── SETUP_GUIDE.md      # 설정 가이드
-└── README.md           # 이 문서
+├── token-manager.js      # 토큰 관리 모듈
+├── keti-eta.html        # 대학 시간표 스타일
+├── keti-white.html      # 화이트 테마
+├── improved.html        # 개선된 버전
+├── index.html          # 기본 버전
+└── README.md           # 이 파일
 ```
 
-## 🛠 기술 스택
+## 🔒 보안 고려사항
 
-- **Frontend**: 순수 HTML5, CSS3, JavaScript (ES6+)
-- **API**: Dooray API
-- **프록시**: 다중 CORS 프록시 지원
-  - AllOrigins
-  - CorsProxy
-  - ThingProxy
-  - Hoppscotch
-- **디자인**: 반응형 디자인, CSS Grid, Flexbox
-- **호스팅**: GitHub Pages
+- API 토큰은 절대 공유하지 마세요
+- 공용 컴퓨터 사용 후 토큰 삭제 권장
+- 정기적으로 토큰 재발급 권장
 
-## 🎯 주요 개선사항 (improved.html)
+## 📝 라이센스
 
-### 📦 모듈화된 구조
-- `CacheManager`: 효율적인 캐시 관리
-- `NotificationManager`: 사용자 알림 시스템
-- `APIManager`: 다중 프록시 자동 선택
-- `UIRenderer`: UI 렌더링 최적화
-- `MeetingRoomApp`: 메인 애플리케이션 컨트롤러
-
-### 🎨 UI/UX 개선
-- 탭 방식의 위치 선택
-- 실시간 통계 표시
-- 툴팁으로 상세 정보 표시
-- 부드러운 애니메이션
-- 범례 추가
-
-### ⚡ 성능 최적화
-- 5분 캐싱 시스템
-- 병렬 API 호출
-- 작동하는 프록시 메서드 자동 저장
-
-## 🔧 CORS 문제 해결
-
-Dooray API는 CORS 정책으로 인해 직접 호출이 제한될 수 있습니다.
-
-### 해결 방법
-1. **프록시 서버 사용** (자동)
-   - 애플리케이션이 자동으로 여러 프록시를 시도합니다
-
-2. **브라우저 확장 프로그램**
-   - [Allow CORS](https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf) 설치
-
-3. **Cloudflare Worker** (고급)
-   - `cloudflare-worker.js` 파일 참조
-   - 자세한 내용은 `CORS_SOLUTION.md` 참고
-
-## 📝 API 토큰 설정
-
-현재 기본 토큰이 설정되어 있습니다. 필요시 HTML 파일의 `API_TOKEN` 값을 수정하세요:
-
-```javascript
-const CONFIG = {
-    API_TOKEN: 'your-api-token-here',
-    // ...
-};
-```
-
-### 토큰 발급 방법
-1. [Dooray](https://dooray.com)에 로그인
-2. 설정 → 개인설정 → API 토큰 메뉴 이동
-3. 새 토큰 생성 버튼 클릭
-4. 생성된 토큰을 복사하여 사용
-
-자세한 API 문서: [Dooray API 가이드](https://helpdesk.dooray.com/share/pages/9wWo-xwiR66BO5LGshgVTg/2939987647631384419)
-
-## 🔒 보안 안내
-
-- API 토큰은 브라우저 로컬 스토리지에만 저장됩니다
-- 서버로 토큰이 전송되지 않으며, 완전히 클라이언트 사이드에서 동작합니다
-- GitHub Pages는 정적 호스팅이므로 서버 사이드 로깅이 없습니다
+MIT License - 자유롭게 사용 및 수정 가능합니다.
 
 ## 🤝 기여하기
 
-기여를 환영합니다! 다음 방법으로 기여할 수 있습니다:
+Pull Request 환영합니다!
+1. Fork
+2. Feature branch 생성
+3. Commit
+4. Push
+5. Pull Request 생성
 
-1. 이슈 등록
-2. Pull Request 제출
-3. 기능 제안
-4. 버그 리포트
+## 📮 문의
 
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-## 👥 개발자
-
-- **메인 개발**: [@hwkim3330](https://github.com/hwkim3330)
-- **기여자**: 환영합니다!
-
-## 📞 문의
-
-- **Issues**: [GitHub Issues](https://github.com/hwkim3330/dooray/issues)
-- **Email**: hwkim3330@github.com
-
-## 🚀 향후 계획
-
-- [ ] 회의실 예약 기능 추가
-- [ ] 모바일 앱 개발
-- [ ] 알림 기능 강화
-- [ ] 통계 대시보드 추가
-- [ ] 다국어 지원
-- [ ] PWA 지원
+Issues 탭에서 문의해주세요.
 
 ---
-
-⭐ 이 프로젝트가 유용하다면 Star를 눌러주세요!
+Made with ❤️ for KETI

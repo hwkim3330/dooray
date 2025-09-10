@@ -59,9 +59,11 @@ KETI(한국전자기술연구원) 회의실 예약 현황을 실시간으로 확
 - 8비트 픽셀 아트 스타일
 - 복고풍 게임 UI
 
-#### ⚪ **keti-white.html** - 화이트 테마 (준비중)
+#### ⚪ **keti-white.html** - 화이트 테마 ✅
 - 미니멀한 화이트 디자인
 - 깔끔한 타이포그래피
+- 그라데이션 예약 블록
+- 실시간 시간 표시
 
 ### ⚡ 성능 최적화
 - 5분 캐싱 시스템으로 빠른 로딩
@@ -73,6 +75,7 @@ KETI(한국전자기술연구원) 회의실 예약 현황을 실시간으로 확
 ### 온라인 사용
 1. 원하는 테마 선택:
    - [대학 시간표 스타일](https://hwkim3330.github.io/dooray/keti-eta.html) ⭐ **추천**
+   - [화이트 미니멀 테마](https://hwkim3330.github.io/dooray/keti-white.html) 🆕 **신규**
    - [최신 개선 버전](https://hwkim3330.github.io/dooray/improved.html)
    - [기본 버전](https://hwkim3330.github.io/dooray/)
 

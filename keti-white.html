@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KETI 회의실 예약 현황 - White</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #ffffff;
+            color: #333333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* 헤더 */
+        .header {
+            background: #ffffff;
+            border-bottom: 2px solid #f0f0f0;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 300;
+            color: #333;
+            letter-spacing: -0.5px;
+        }
+        
+        .header-info {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .current-time {
+            font-size: 24px;
+            font-weight: 200;
+            color: #666;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 필터 및 검색 */
+        .controls {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #333;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .filter-btn:hover {
+            border-color: #333;
+            color: #333;
+        }
+        
+        .filter-btn.active {
+            background: #333;
+            color: white;
+            border-color: #333;
+        }
+        
+        /* 회의실 그리드 */
+        .rooms-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .room-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .room-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .room-header {
+            padding: 15px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .room-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .room-location {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+        
+        .room-status {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-available {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-occupied {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        /* 타임라인 */
+        .timeline-container {
+            padding: 20px;
+            background: white;
+        }
+        
+        .timeline-header {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            margin-bottom: 10px;
+        }
+        
+        .time-labels {
+            grid-column: 2;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .timeline-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            height: 50px;
+            align-items: center;
+            position: relative;
+        }
+        
+        .timeline-track {
+            position: relative;
+            height: 40px;
+            background: #f5f5f5;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .booking-block {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .booking-block:hover {
+            filter: brightness(1.1);
+            z-index: 10;
+        }
+        
+        /* 다양한 예약 색상 */
+        .booking-block:nth-child(2) {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .booking-block:nth-child(3) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .booking-block:nth-child(4) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        /* 현재 시간 표시 */
+        .current-time-indicator {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #ff4444;
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        .current-time-indicator::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            background: #ff4444;
+            border-radius: 50%;
+        }
+        
+        /* 범례 */
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        /* 로딩 */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #999;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 토큰 입력 모달 */
+        .token-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .token-modal.active {
+            display: flex;
+        }
+        
+        .token-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .token-modal h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+        }
+        
+        .token-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #555;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        /* 토큰 변경 버튼 */
+        .token-change-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .token-change-btn:hover {
+            transform: scale(1.1);
+            background: #555;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                min-width: 100%;
+            }
+            
+            .filter-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="header-content">
+                <h1>KETI 회의실 예약 현황</h1>
+                <div class="header-info">
+                    <div class="current-time" id="currentTime">12:00</div>
+                    <div class="status-dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 컨트롤 -->
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" placeholder="회의실 또는 예약자 검색..." id="searchInput">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterRooms('all')">전체</button>
+                <button class="filter-btn" onclick="filterRooms('available')">예약가능</button>
+                <button class="filter-btn" onclick="filterRooms('my')">내 예약</button>
+            </div>
+        </div>
+        
+        <!-- 회의실 목록 -->
+        <div class="rooms-grid" id="roomsGrid">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>회의실 정보를 불러오는 중...</div>
+            </div>
+        </div>
+        
+        <!-- 범례 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <span>일반 회의</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                <span>중요 회의</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                <span>외부 미팅</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff4444;"></div>
+                <span>현재 시간</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 토큰 입력 모달 -->
+    <div class="token-modal" id="tokenModal">
+        <div class="token-modal-content">
+            <h2>🔐 Dooray API 토큰 입력</h2>
+            <p style="margin-bottom: 20px; color: #666;">
+                API 토큰 형식: <code>tenantId:token</code><br>
+                예: s701wolho5si:your-token-here
+            </p>
+            <input type="text" class="token-input" id="tokenInput" 
+                   placeholder="tenantId:token" 
+                   value="">
+            <div class="token-buttons">
+                <button class="btn btn-secondary" onclick="skipToken()">나중에</button>
+                <button class="btn btn-primary" onclick="saveToken()">저장</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 토큰 변경 버튼 -->
+    <button class="token-change-btn" onclick="changeToken()" title="API 토큰 변경">
+        🔑
+    </button>
+    
+    <!-- Token Manager -->
+    <script src="token-manager.js"></script>
+    
+    <script>
+        // API 설정
+        const API = {
+            PROXY_URL: 'https://api.allorigins.win/raw?url=',
+            CALENDAR_URL: 'https://api.dooray.com/calendar/v2/calendars/calendars',
+            
+            // 토큰 관리
+            getHeaders() {
+                const token = TokenManager.getToken();
+                if (!token) {
+                    showTokenModal();
+                    return null;
+                }
+                return {
+                    'Authorization': `dooray-api ${token}`,
+                    'Content-Type': 'application/json'
+                };
+            }
+        };
+        
+        // 전역 변수
+        let allRooms = [];
+        let currentFilter = 'all';
+        
+        // 토큰 모달 관리
+        function showTokenModal() {
+            document.getElementById('tokenModal').classList.add('active');
+            const savedToken = localStorage.getItem('dooray_api_token');
+            if (savedToken) {
+                document.getElementById('tokenInput').value = savedToken;
+            }
+        }
+        
+        function hideTokenModal() {
+            document.getElementById('tokenModal').classList.remove('active');
+        }
+        
+        function saveToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (token) {
+                TokenManager.saveToken(token);
+                hideTokenModal();
+                loadRooms();
+            } else {
+                alert('토큰을 입력해주세요.');
+            }
+        }
+        
+        function skipToken() {
+            hideTokenModal();
+            showError('API 토큰이 필요합니다.');
+        }
+        
+        function changeToken() {
+            showTokenModal();
+        }
+        
+        // 회의실 데이터 로드
+        async function loadRooms() {
+            const headers = API.getHeaders();
+            if (!headers) return;
+            
+            try {
+                const response = await fetch(API.PROXY_URL + encodeURIComponent(API.CALENDAR_URL), {
+                    headers: headers
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API 요청 실패');
+                }
+                
+                const data = await response.json();
+                allRooms = processRoomData(data);
+                renderRooms();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('데이터를 불러올 수 없습니다. 토큰을 확인해주세요.');
+            }
+        }
+        
+        // 데이터 처리
+        function processRoomData(data) {
+            // 실제 API 응답에 맞게 수정 필요
+            // 임시 더미 데이터
+            return [
+                {
+                    id: 1,
+                    name: '회의실 A',
+                    location: '7층',
+                    available: true,
+                    bookings: [
+                        { start: 9, end: 10, title: '기획 회의', user: '김철수' },
+                        { start: 14, end: 16, title: '개발 미팅', user: '이영희' }
+                    ]
+                },
+                {
+                    id: 2,
+                    name: '회의실 B',
+                    location: '7층',
+                    available: false,
+                    bookings: [
+                        { start: 10, end: 12, title: '디자인 리뷰', user: '박민수' },
+                        { start: 15, end: 17, title: '고객 미팅', user: '정수진' }
+                    ]
+                },
+                {
+                    id: 3,
+                    name: '대회의실',
+                    location: '8층',
+                    available: true,
+                    bookings: [
+                        { start: 13, end: 15, title: '전체 회의', user: '최대표' }
+                    ]
+                }
+            ];
+        }
+        
+        // 회의실 렌더링
+        function renderRooms() {
+            const grid = document.getElementById('roomsGrid');
+            
+            let filtered = allRooms;
+            if (currentFilter === 'available') {
+                filtered = allRooms.filter(r => r.available);
+            } else if (currentFilter === 'my') {
+                // 내 예약 필터링 로직
+            }
+            
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(r => 
+                    r.name.toLowerCase().includes(searchTerm) ||
+                    r.bookings.some(b => b.user.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            grid.innerHTML = filtered.map(room => `
+                <div class="room-card">
+                    <div class="room-header">
+                        <div>
+                            <div class="room-name">${room.name}</div>
+                            <div class="room-location">${room.location}</div>
+                        </div>
+                        <div class="room-status ${room.available ? 'status-available' : 'status-occupied'}">
+                            ${room.available ? '예약 가능' : '사용중'}
+                        </div>
+                    </div>
+                    <div class="timeline-container">
+                        <div class="timeline-header">
+                            <div></div>
+                            <div class="time-labels">
+                                <span>9시</span>
+                                <span>12시</span>
+                                <span>15시</span>
+                                <span>18시</span>
+                            </div>
+                        </div>
+                        <div class="timeline-row">
+                            <div></div>
+                            <div class="timeline-track">
+                                ${renderBookings(room.bookings)}
+                                ${renderCurrentTime()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 예약 블록 렌더링
+        function renderBookings(bookings) {
+            return bookings.map((booking, index) => {
+                const left = ((booking.start - 9) / 9) * 100;
+                const width = ((booking.end - booking.start) / 9) * 100;
+                return `
+                    <div class="booking-block" 
+                         style="left: ${left}%; width: ${width}%;"
+                         title="${booking.title} (${booking.user})">
+                        ${booking.title}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 현재 시간 표시
+        function renderCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours() + now.getMinutes() / 60;
+            if (hours < 9 || hours > 18) return '';
+            
+            const left = ((hours - 9) / 9) * 100;
+            return `<div class="current-time-indicator" style="left: ${left}%;"></div>`;
+        }
+        
+        // 필터링
+        function filterRooms(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderRooms();
+        }
+        
+        // 검색
+        document.getElementById('searchInput').addEventListener('input', renderRooms);
+        
+        // 시간 업데이트
+        function updateTime() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('currentTime').textContent = time;
+        }
+        
+        // 에러 표시
+        function showError(message) {
+            document.getElementById('roomsGrid').innerHTML = `
+                <div class="loading">
+                    <div style="color: #f44336;">⚠️ ${message}</div>
+                </div>
+            `;
+        }
+        
+        // 초기화
+        function init() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 토큰 확인 및 데이터 로드
+            if (TokenManager.hasToken()) {
+                loadRooms();
+            } else {
+                showTokenModal();
+            }
+            
+            // 자동 새로고침 (1분마다)
+            setInterval(() => {
+                if (TokenManager.hasToken()) {
+                    loadRooms();
+                }
+            }, 60000);
+        }
+        
+        // 페이지 로드시 실행
+        init();
+    </script>
+</body>
+</html>
